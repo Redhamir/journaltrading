@@ -8,18 +8,27 @@
   <title>Journal de trading — Interface Améliorée</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/trade-gothic-next" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+  
   <style>
+    /* POLICE TRADE REPUBLIC */
     :root {
-      /* Mode Sombre (par défaut) */
+      --font-primary: 'Trade Gothic Next', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      
       --bg: #0A0A0A;
       --bg-card: #1A1A1A;
       --fg: #F5F5F5;
       --muted: #A8A8A8;
       --accent-green: #00C48C;
       --accent-red: #FF5C63;
-      --accent-blue: #3B82F6;
+      --accent-blue: #00D4FF;
+      --accent-purple: #8B5CF6;
       --glass: rgba(30, 30, 30, 0.95);
       --card-bg: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
       --border: rgba(255,255,255,0.1);
@@ -28,14 +37,14 @@
     }
 
     [data-theme="light"] {
-      /* Mode Clair - CONTRASTE CORRIGÉ */
       --bg: #FFFFFF;
       --bg-card: #F8F9FA;
       --fg: #1A1A1A;
       --muted: #666666;
       --accent-green: #00A876;
       --accent-red: #E53E3E;
-      --accent-blue: #1D4ED8;
+      --accent-blue: #007AFF;
+      --accent-purple: #7C3AED;
       --glass: rgba(248, 249, 250, 0.95);
       --card-bg: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01));
       --border: rgba(0,0,0,0.15);
@@ -46,6 +55,7 @@
     * {
       transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
       box-sizing: border-box;
+      font-family: var(--font-primary);
     }
 
     html, body {
@@ -53,11 +63,10 @@
       margin: 0;
       background: var(--bg);
       color: var(--fg);
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      font-family: var(--font-primary);
       overflow-x: hidden;
     }
 
-    /* NOUVEAU: Support iPhone 15 et safe areas */
     .app {
       display: flex;
       gap: 24px;
@@ -68,7 +77,6 @@
       box-sizing: border-box;
     }
 
-    /* NOUVEAU: Toast System */
     .toast-container {
       position: fixed;
       top: 20px;
@@ -135,7 +143,6 @@
       to { transform: translateX(100%); opacity: 0; }
     }
 
-    /* NOUVEAU: Floating Action Button (FAB) */
     .fab {
       position: fixed;
       bottom: 30px;
@@ -166,7 +173,6 @@
       transform: scale(0.95);
     }
 
-    /* Sidebar améliorée pour mobile */
     .sidebar {
       width: 260px;
       background: var(--bg-card);
@@ -237,7 +243,6 @@
       color: var(--muted);
     }
 
-    /* Main Content */
     .main {
       flex: 1;
       display: flex;
@@ -367,7 +372,6 @@
       color: var(--muted);
     }
 
-    /* Modal - SCROLL BLOQUÉ CORRECTEMENT */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -428,7 +432,6 @@
       font-weight: 500;
     }
 
-    /* NOUVEAU: Heatmap amélioré */
     .heatmap-section {
       margin-top: 20px;
     }
@@ -507,7 +510,6 @@
       background: linear-gradient(90deg, var(--accent-red), rgba(255,255,255,0.1), var(--accent-green));
     }
 
-    /* Analytics */
     .analytics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -550,7 +552,6 @@
       border: 1px solid var(--border);
     }
 
-    /* NOUVEAU: Quick Add Trade */
     .quick-add {
       background: var(--bg-card);
       border-radius: 12px;
@@ -580,7 +581,6 @@
       justify-content: center;
     }
 
-    /* Auth modal */
     .auth-modal .modal {
       width: 400px;
     }
@@ -623,7 +623,6 @@
       color: white;
     }
 
-    /* Mobile menu amélioré */
     .mobile-menu-btn {
       display: none;
       background: var(--bg-card);
@@ -652,7 +651,6 @@
       backdrop-filter: blur(5px);
     }
 
-    /* NOUVEAU: Validation visuelle des champs */
     .input-valid {
       border-color: var(--accent-green) !important;
       background: rgba(0, 196, 140, 0.05) !important;
@@ -677,7 +675,32 @@
       color: var(--accent-red);
     }
 
-    /* Responsive - OPTIMISÉ POUR IPHONE 15 */
+    /* Cases à cocher pour graphiques */
+    .chart-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--glass);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .chart-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .chart-checkbox input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+
     @media (max-width: 1200px) {
       .dash-grid {
         grid-template-columns: 1fr;
@@ -754,12 +777,10 @@
         gap: 12px;
       }
 
-      /* Afficher le FAB sur mobile */
       .fab {
         display: flex;
       }
 
-      /* Cacher certains boutons redondants sur mobile */
       .header .btn.primary {
         display: none;
       }
@@ -793,7 +814,6 @@
       }
     }
 
-    /* NOUVEAU: Support de la sélection de symboles avec datalist */
     .symbol-suggestions {
       position: absolute;
       background: var(--bg-card);
@@ -823,17 +843,13 @@
   </style>
 </head>
 <body>
-  <!-- NOUVEAU: Container pour les toasts -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- NOUVEAU: Bouton flottant pour mobile -->
   <button class="fab" id="fabButton" title="Nouveau trade">+</button>
 
-  <!-- NOUVEAU: Overlay mobile -->
   <div class="mobile-overlay" id="mobileOverlay"></div>
 
   <div class="app">
-    <!-- Mobile Menu Button -->
     <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
 
     <aside class="sidebar card" id="sidebar">
@@ -884,7 +900,6 @@
         </div>
       </div>
 
-      <!-- NOUVEAU: Quick Add Trade -->
       <div class="quick-add" id="quickAdd">
         <div style="font-weight:600;margin-bottom:12px">Ajout rapide</div>
         <form class="quick-add-form" id="quickAddForm">
@@ -911,7 +926,6 @@
         </form>
       </div>
 
-      <!-- Dashboard View -->
       <div class="dash-grid" id="dashboardView">
         <section>
           <div class="card" style="margin-bottom:12px">
@@ -931,7 +945,6 @@
             </div>
           </div>
 
-          <!-- NOUVEAU: Best/Worst Trades -->
           <div class="card" style="margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <div style="font-weight:700">Performances extrêmes</div>
@@ -959,7 +972,6 @@
             </div>
           </div>
 
-          <!-- NOUVEAU: Heatmap amélioré -->
           <div class="card heatmap-section">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <div style="font-weight:700">Calendrier des performances</div>
@@ -1021,8 +1033,6 @@
         </aside>
       </div>
 
-      <!-- Le reste du code reste inchangé pour les autres vues (Trades, Analytics, Import/Export, Settings) -->
-      <!-- Trades View -->
       <div id="tradesView" style="display:none">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1036,12 +1046,10 @@
         </div>
       </div>
 
-      <!-- Analytics View -->
       <div id="analyticsView" style="display:none">
         <div class="card">
           <div style="font-weight:700;margin-bottom:16px">Analyses détaillées</div>
           
-          <!-- Métriques principales -->
           <div class="analytics-grid">
             <div class="metric-card">
               <div class="small">Profit Factor</div>
@@ -1059,9 +1067,16 @@
               <div class="small">Ratio Moyen G/P</div>
               <div class="metric-value" id="avgWinLossRatio">--</div>
             </div>
+            <div class="metric-card">
+              <div class="small">Sharpe Ratio</div>
+              <div class="metric-value" id="sharpeRatio">--</div>
+            </div>
+            <div class="metric-card">
+              <div class="small">Volatilité Mensuelle</div>
+              <div class="metric-value" id="monthlyVolatility">--</div>
+            </div>
           </div>
 
-          <!-- Graphiques analytiques -->
           <div class="charts-grid" style="margin-top:20px">
             <div class="chart-card">
               <div style="font-weight:600;margin-bottom:12px">Distribution des P&L</div>
@@ -1073,7 +1088,6 @@
             </div>
           </div>
 
-          <!-- Statistiques détaillées -->
           <div style="margin-top:20px">
             <div style="font-weight:600;margin-bottom:12px">Statistiques avancées</div>
             <div class="analytics-grid">
@@ -1086,19 +1100,26 @@
                 <div class="metric-value" id="tradesPerMonth">--</div>
               </div>
               <div class="metric-card">
-                <div class="small">Meilleur trade</div>
-                <div class="metric-value metric-positive" id="bestTrade">--</div>
+                <div class="small">Consistance Gains</div>
+                <div class="metric-value" id="winConsistency">--</div>
               </div>
               <div class="metric-card">
-                <div class="small">Pire trade</div>
-                <div class="metric-value metric-negative" id="worstTrade">--</div>
+                <div class="small">Performance Long</div>
+                <div class="metric-value" id="longPerformance">--</div>
+              </div>
+              <div class="metric-card">
+                <div class="small">Performance Short</div>
+                <div class="metric-value" id="shortPerformance">--</div>
+              </div>
+              <div class="metric-card">
+                <div class="small">Best Série Gains</div>
+                <div class="metric-value" id="bestWinStreak">--</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Import/Export View -->
       <div id="importView" style="display:none">
         <div class="card">
           <div style="font-weight:700;margin-bottom:12px">Import / Export</div>
@@ -1110,7 +1131,6 @@
         </div>
       </div>
 
-      <!-- Settings View -->
       <div id="settingsView" style="display:none">
         <div class="card">
           <div style="font-weight:700">Paramètres</div>
@@ -1137,7 +1157,6 @@
     </main>
   </div>
 
-  <!-- Modal Nouveau trade / Edit trade -->
   <div class="modal-backdrop" id="modalBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1233,20 +1252,46 @@
     </div>
   </div>
 
-  <!-- Modal Graphique Plein Écran -->
+  <!-- Modal Plein Écran Amélioré -->
   <div class="modal-backdrop" id="chartModal" style="display:none">
     <div class="modal modal-fullscreen" role="dialog" aria-modal="true">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-weight:700">Graphique Équity - Plein écran</div>
+        <div style="font-weight:700">Analyses Avancées - Plein écran</div>
         <button class="btn" id="closeChartModal">Fermer</button>
       </div>
-      <div style="height:calc(100% - 60px);">
-        <canvas id="fullscreenChart"></canvas>
+      
+      <div class="chart-controls">
+        <label class="chart-checkbox">
+          <input type="checkbox" id="showEquity" checked> Équity Curve
+        </label>
+        <label class="chart-checkbox">
+          <input type="checkbox" id="showDrawdown" checked> Drawdown
+        </label>
+        <label class="chart-checkbox">
+          <input type="checkbox" id="showMonthlyPerf"> Performance Mensuelle
+        </label>
+        <label class="chart-checkbox">
+          <input type="checkbox" id="showHourlyHeatmap"> Heatmap Horaire
+        </label>
+      </div>
+      
+      <div style="height:calc(100% - 120px); display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="background: var(--bg-card); border-radius: 12px; padding: 16px; border: 1px solid var(--border);">
+          <div style="font-weight:600;margin-bottom:12px">Équity & Drawdown</div>
+          <canvas id="fullscreenEquityChart"></canvas>
+        </div>
+        <div style="background: var(--bg-card); border-radius: 12px; padding: 16px; border: 1px solid var(--border);">
+          <div style="font-weight:600;margin-bottom:12px">Performance Mensuelle</div>
+          <canvas id="fullscreenMonthlyChart"></canvas>
+        </div>
+        <div style="background: var(--bg-card); border-radius: 12px; padding: 16px; border: 1px solid var(--border); grid-column: span 2;">
+          <div style="font-weight:600;margin-bottom:12px">Heatmap des Performances</div>
+          <canvas id="fullscreenHeatmapChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal Authentification -->
   <div class="modal-backdrop auth-modal" id="authModal" style="display:none">
     <div class="modal" role="dialog" aria-modal="true">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1285,7 +1330,254 @@
   </div>
 
   <script>
-    // ========== NOUVEAU: Système de Toasts ==========
+    // ========== CONFIGURATION FIREBASE ==========
+    const firebaseConfig = {
+      apiKey: "AIzaSyDGfiBOOEZiLZmh7clQlSZAr1W6P6Si8vM",
+      authDomain: "journaltrading-a6bc6.firebaseapp.com",
+      projectId: "journaltrading-a6bc6",
+      storageBucket: "journaltrading-a6bc6.firebasestorage.app",
+      messagingSenderId: "220303277331",
+      appId: "1:220303277331:web:f4251eebd62d3058f82ee6",
+      measurementId: "G-8EEHYVXQS6"
+    };
+
+    // Initialiser Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // ========== ÉTAT GLOBAL UNIFIÉ ==========
+    const AppState = {
+      trades: [],
+      capital: null,
+      currentUser: null,
+      currentEditing: null,
+      
+      // Nouveau: Stockage séparé par utilisateur
+      getStorageKey() {
+        const userId = this.currentUser ? this.currentUser.uid : 'guest';
+        return `trading_journal_v4_${userId}`;
+      },
+      
+      getCapitalKey() {
+        const userId = this.currentUser ? this.currentUser.uid : 'guest';
+        return `capital_${userId}`;
+      },
+      
+      init() {
+        this.loadFromLocal();
+      },
+      
+      loadFromLocal() {
+        try {
+          const storageKey = this.getStorageKey();
+          const capitalKey = this.getCapitalKey();
+          
+          const storedTrades = localStorage.getItem(storageKey);
+          const storedCapital = localStorage.getItem(capitalKey);
+          
+          this.trades = storedTrades ? JSON.parse(storedTrades) : [];
+          this.capital = storedCapital ? parseFloat(storedCapital) : null;
+          this.trades = this.trades.filter(t => t && t.id && t.symbol);
+          console.log('Données locales chargées pour', this.currentUser?.email || 'guest', ':', this.trades.length, 'trades');
+        } catch (error) {
+          console.error('Error loading data:', error);
+          this.trades = [];
+          this.capital = null;
+        }
+      },
+      
+      persistToLocal() {
+        try {
+          const storageKey = this.getStorageKey();
+          const capitalKey = this.getCapitalKey();
+          
+          localStorage.setItem(storageKey, JSON.stringify(this.trades));
+          if (this.capital !== null) {
+            localStorage.setItem(capitalKey, this.capital.toString());
+          }
+          return true;
+        } catch (error) {
+          console.error('Error saving data:', error);
+          showToast('Erreur lors de la sauvegarde locale', 'error');
+          return false;
+        }
+      },
+      
+      async persist() {
+        const localSuccess = this.persistToLocal();
+        if (this.currentUser) {
+          await this.syncToCloud();
+        }
+        return localSuccess;
+      },
+      
+      // ========== SYNCHRO CLOUD ==========
+      async syncToCloud() {
+        if (!this.currentUser) {
+          console.log('syncToCloud: Aucun utilisateur connecté');
+          return false;
+        }
+        
+        try {
+          console.log('🔄 Début synchronisation avec', this.trades.length, 'trades');
+          showToast('Synchronisation en cours...', 'info');
+          
+          let successCount = 0;
+          let errorCount = 0;
+          
+          if (!this.trades || this.trades.length === 0) {
+            console.log('Aucun trade à synchroniser');
+            updateSyncStatus('✅ Aucun trade à synchroniser', true);
+            return true;
+          }
+          
+          for (const trade of this.trades) {
+            try {
+              if (!trade.id || !trade.symbol) {
+                console.warn('Trade invalide ignoré:', trade);
+                errorCount++;
+                continue;
+              }
+              
+              const tradeData = {
+                id: trade.id,
+                symbol: trade.symbol || '',
+                side: trade.side || 'long',
+                entry_price: Number(trade.entry_price) || 0,
+                exit_price: trade.exit_price ? Number(trade.exit_price) : null,
+                size: Number(trade.size) || 0,
+                fees: Number(trade.fees) || 0,
+                taxes: Number(trade.taxes) || 0,
+                entry_timestamp: trade.entry_timestamp || new Date().toISOString(),
+                exit_timestamp: trade.exit_timestamp || null,
+                confidence: Number(trade.confidence) || 50,
+                score: Number(trade.score) || 50,
+                comment: trade.comment || '',
+                market: trade.market || 'spot',
+                timezone: trade.timezone || 'Europe/Paris',
+                userId: this.currentUser.uid,
+                updated_at: firebase.firestore.FieldValue.serverTimestamp()
+              };
+              
+              if (trade.notional) tradeData.notional = Number(trade.notional);
+              if (trade.computed_pnl !== undefined && trade.computed_pnl !== null) {
+                tradeData.computed_pnl = Number(trade.computed_pnl);
+              }
+              if (trade.duration_seconds) tradeData.duration_seconds = Number(trade.duration_seconds);
+              
+              console.log(`📤 Synchronisation de ${trade.symbol}...`);
+              
+              const tradeRef = db.collection('trades').doc(trade.id);
+              await tradeRef.set(tradeData, { merge: true });
+              
+              successCount++;
+              console.log(`✅ ${trade.symbol} synchronisé`);
+              
+            } catch (error) {
+              console.error(`❌ Erreur sur ${trade.symbol}:`, error);
+              errorCount++;
+            }
+          }
+          
+          console.log(`📊 Synchronisation terminée: ${successCount} réussis, ${errorCount} erreurs`);
+          
+          if (successCount > 0) {
+            const message = `${successCount} trade(s) synchronisé(s)`;
+            updateSyncStatus(`✅ ${message}`, true);
+            
+            if (errorCount > 0) {
+              showAlert(`${message}, ${errorCount} erreur(s)`, 'warning');
+            } else {
+              showAlert('Synchronisation réussie !', 'success');
+            }
+            return true;
+          } else {
+            throw new Error(`Aucun trade synchronisé (${errorCount} erreurs)`);
+          }
+          
+        } catch (error) {
+          console.error('💥 Erreur générale de synchronisation:', error);
+          updateSyncStatus('❌ Sync échouée', false);
+          showAlert('Erreur: ' + error.message, 'error');
+          return false;
+        }
+      },
+      
+      async loadFromCloud() {
+        if (!this.currentUser) {
+          console.log('loadFromCloud: Aucun utilisateur connecté');
+          return false;
+        }
+        
+        try {
+          console.log('📥 Chargement depuis le cloud...');
+          
+          const snapshot = await db.collection('trades')
+            .where('userId', '==', this.currentUser.uid)
+            .orderBy('updated_at', 'desc')
+            .get();
+          
+          console.log(`${snapshot.size} trades trouvés dans le cloud`);
+          
+          if (snapshot.empty) {
+            console.log('Aucun trade dans le cloud');
+            return true;
+          }
+          
+          const cloudTrades = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.updated_at && typeof data.updated_at.toDate === 'function') {
+              data.updated_at = data.updated_at.toDate().toISOString();
+            }
+            cloudTrades.push(data);
+          });
+          
+          const beforeCount = this.trades.length;
+          this.mergeTrades(cloudTrades);
+          const afterCount = this.trades.length;
+          
+          console.log(`🔄 Fusion: ${beforeCount} -> ${afterCount} trades`);
+          
+          this.persistToLocal();
+          
+          showToast(`${cloudTrades.length} trades chargés du cloud`, 'success');
+          return true;
+          
+        } catch (error) {
+          console.error('❌ Erreur loadFromCloud:', error);
+          showAlert('Erreur chargement cloud: ' + error.message, 'error');
+          return false;
+        }
+      },
+      
+      mergeTrades(cloudTrades) {
+        const tradeMap = new Map();
+        
+        cloudTrades.forEach(cloudTrade => {
+          tradeMap.set(cloudTrade.id, { ...cloudTrade, source: 'cloud' });
+        });
+        
+        this.trades.forEach(localTrade => {
+          const existing = tradeMap.get(localTrade.id);
+          if (!existing) {
+            tradeMap.set(localTrade.id, { ...localTrade, source: 'local' });
+          } else {
+            const localUpdated = new Date(localTrade.updated_at || localTrade.entry_timestamp || 0);
+            const cloudUpdated = new Date(existing.updated_at || existing.entry_timestamp || 0);
+            
+            if (localUpdated > cloudUpdated) {
+              tradeMap.set(localTrade.id, { ...localTrade, source: 'local' });
+            }
+          }
+        });
+        
+        this.trades = Array.from(tradeMap.values());
+      }
+    };
+
+    // ========== FONCTIONS UTILITAIRES ==========
     function showToast(message, type = 'info', duration = 4000) {
       const toastContainer = document.getElementById('toastContainer');
       const toast = document.createElement('div');
@@ -1305,7 +1597,6 @@
       
       toastContainer.appendChild(toast);
       
-      // Auto-remove after duration
       setTimeout(() => {
         toast.classList.add('fade-out');
         setTimeout(() => {
@@ -1318,162 +1609,600 @@
       return toast;
     }
 
-    // Remplacer les alert() par des toasts
     function showAlert(message, type = 'info') {
       return showToast(message, type, 5000);
     }
 
-    // Remplacer les confirm() par des toasts avec callback
-    function showConfirm(message, confirmCallback, cancelCallback) {
-      const toast = showToast(message + ' ❌✅', 'warning', 10000);
-      
-      // Ajouter des boutons d'action
-      const actions = document.createElement('div');
-      actions.style.display = 'flex';
-      actions.style.gap = '8px';
-      actions.style.marginTop = '8px';
-      
-      actions.innerHTML = `
-        <button class="btn" style="padding:4px 8px;font-size:12px;" id="confirmCancel">Annuler</button>
-        <button class="btn primary" style="padding:4px 8px;font-size:12px;" id="confirmOk">OK</button>
-      `;
-      
-      toast.querySelector('.toast-message').appendChild(actions);
-      
-      toast.querySelector('#confirmOk').addEventListener('click', () => {
-        if (confirmCallback) confirmCallback();
-        toast.classList.add('fade-out');
-        setTimeout(() => toast.remove(), 300);
-      });
-      
-      toast.querySelector('#confirmCancel').addEventListener('click', () => {
-        if (cancelCallback) cancelCallback();
-        toast.classList.add('fade-out');
-        setTimeout(() => toast.remove(), 300);
-      });
-    }
+    function cryptoRandomId(){ return 't_'+Math.random().toString(36).slice(2,10) + '_' + Date.now().toString(36); }
 
-    // ========== NOUVEAU: Gestion du Scroll ==========
-    let scrollPosition = 0;
-    
-    function disableScroll() {
-      scrollPosition = window.pageYOffset;
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollPosition}px`;
-      document.body.style.width = '100%';
+    function computePnL(tr){ 
+      if(!tr || tr.exit_price == null || tr.entry_price == null || tr.size == null) return null; 
+      if(tr.entry_price <= 0 || tr.size <= 0) return null;
+      
+      let pnl;
+      if(tr.side === 'long') {
+        pnl = (tr.exit_price - tr.entry_price) * tr.size - (tr.fees || 0) - (tr.taxes || 0);
+      } else {
+        pnl = (tr.entry_price - tr.exit_price) * tr.size - (tr.fees || 0) - (tr.taxes || 0);
+      }
+      return parseFloat(pnl.toFixed(2));
     }
     
-    function enableScroll() {
-      document.body.style.removeProperty('overflow');
-      document.body.style.removeProperty('position');
-      document.body.style.removeProperty('top');
-      document.body.style.removeProperty('width');
-      window.scrollTo(0, scrollPosition);
+    function safeDateParse(dateString) {
+      if (!dateString) return null;
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? null : date;
+    }
+    
+    function calculateDuration(entryTimestamp, exitTimestamp) {
+      if (!entryTimestamp || !exitTimestamp) return null;
+      const entry = safeDateParse(entryTimestamp);
+      const exit = safeDateParse(exitTimestamp);
+      if (!entry || !exit) return null;
+      return Math.floor((exit - entry) / 1000);
+    }
+    
+    function validateTrade(t) {
+      const errors = [];
+      
+      if (!t.symbol || t.symbol.trim() === '') {
+        errors.push('Le symbole est requis');
+      }
+      if (!t.entry_price || t.entry_price <= 0) {
+        errors.push('Le prix d\'entrée doit être positif');
+      }
+      if (!t.size || t.size <= 0) {
+        errors.push('La taille doit être positive');
+      }
+      if (t.side !== 'long' && t.side !== 'short') {
+        errors.push('Le side doit être "long" ou "short"');
+      }
+      
+      if (errors.length > 0) {
+        throw new Error(errors.join(', '));
+      }
+      return true;
     }
 
-    // ========== NOUVEAU: Validation des champs ==========
-    function setupFieldValidation() {
-      const fields = {
-        symbol: { required: true, minLength: 1, pattern: /^[A-Za-z0-9]+$/ },
-        size: { required: true, min: 0.001 },
-        entry_price: { required: true, min: 0.001 }
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
       };
+    }
+
+    // ========== CALCULS ANALYTICS AVANCÉS ==========
+    function calculateAdvancedMetrics() {
+      const closedTrades = AppState.trades.filter(t => t.computed_pnl != null);
+      if (closedTrades.length === 0) return {};
       
-      Object.keys(fields).forEach(fieldName => {
-        const field = document.getElementById(fieldName);
-        if (field) {
-          field.addEventListener('blur', validateField);
-          field.addEventListener('input', validateField);
+      const winningTrades = closedTrades.filter(t => t.computed_pnl > 0);
+      const losingTrades = closedTrades.filter(t => t.computed_pnl < 0);
+      
+      // Profit Factor
+      const totalProfit = winningTrades.reduce((sum, t) => sum + t.computed_pnl, 0);
+      const totalLoss = Math.abs(losingTrades.reduce((sum, t) => sum + t.computed_pnl, 0));
+      const profitFactor = totalLoss > 0 ? (totalProfit / totalLoss) : totalProfit > 0 ? Infinity : 0;
+      
+      // Expectancy
+      const avgWin = winningTrades.length > 0 ? totalProfit / winningTrades.length : 0;
+      const avgLoss = losingTrades.length > 0 ? totalLoss / losingTrades.length : 0;
+      const winRate = winningTrades.length / closedTrades.length;
+      const expectancy = (winRate * avgWin) - ((1 - winRate) * avgLoss);
+      
+      // Max Drawdown
+      let maxDrawdown = 0;
+      let peak = AppState.capital || 0;
+      let equity = AppState.capital || 0;
+      
+      closedTrades.sort((a, b) => new Date(a.exit_timestamp) - new Date(b.exit_timestamp));
+      
+      closedTrades.forEach(trade => {
+        equity += trade.computed_pnl;
+        if (equity > peak) peak = equity;
+        const drawdown = ((peak - equity) / peak) * 100;
+        if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+      });
+      
+      // Ratio Gain/Perte
+      const avgWinLossRatio = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? Infinity : 0;
+      
+      // Sharpe Ratio (simplifié)
+      const returns = closedTrades.map(t => t.computed_pnl / (t.notional || 1));
+      const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const stdDev = Math.sqrt(returns.map(r => Math.pow(r - avgReturn, 2)).reduce((a, b) => a + b, 0) / returns.length);
+      const sharpeRatio = stdDev > 0 ? avgReturn / stdDev : 0;
+      
+      // Volatilité Mensuelle
+      const monthlyReturns = calculateMonthlyReturns(closedTrades);
+      const monthlyVolatility = calculateVolatility(monthlyReturns);
+      
+      // Autres métriques
+      const durations = closedTrades.map(t => t.duration_seconds || 0).filter(d => d > 0);
+      const avgDuration = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length / (24 * 3600) : 0;
+      
+      const tradesByMonth = groupTradesByMonth(closedTrades);
+      const tradesPerMonth = Object.values(tradesByMonth).reduce((a, b) => a + b, 0) / Math.max(Object.keys(tradesByMonth).length, 1);
+      
+      // Consistance des gains
+      const monthlyPnL = calculateMonthlyPnL(closedTrades);
+      const profitableMonths = Object.values(monthlyPnL).filter(pnl => pnl > 0).length;
+      const winConsistency = (profitableMonths / Math.max(Object.keys(monthlyPnL).length, 1)) * 100;
+      
+      // Performance par side
+      const longTrades = closedTrades.filter(t => t.side === 'long');
+      const shortTrades = closedTrades.filter(t => t.side === 'short');
+      const longPerformance = longTrades.reduce((sum, t) => sum + t.computed_pnl, 0);
+      const shortPerformance = shortTrades.reduce((sum, t) => sum + t.computed_pnl, 0);
+      
+      // Best série de gains
+      const bestWinStreak = calculateBestWinStreak(closedTrades);
+      
+      return {
+        profitFactor: profitFactor.toFixed(2),
+        expectancy: expectancy.toFixed(2),
+        maxDrawdown: maxDrawdown.toFixed(2) + '%',
+        avgWinLossRatio: avgWinLossRatio.toFixed(2),
+        sharpeRatio: sharpeRatio.toFixed(2),
+        monthlyVolatility: (monthlyVolatility * 100).toFixed(2) + '%',
+        avgDuration: avgDuration.toFixed(1),
+        tradesPerMonth: tradesPerMonth.toFixed(1),
+        winConsistency: winConsistency.toFixed(1) + '%',
+        longPerformance: longPerformance.toFixed(2) + ' €',
+        shortPerformance: shortPerformance.toFixed(2) + ' €',
+        bestWinStreak: bestWinStreak
+      };
+    }
+    
+    function calculateMonthlyReturns(trades) {
+      const monthly = {};
+      trades.forEach(trade => {
+        const date = new Date(trade.exit_timestamp);
+        const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+        if (!monthly[monthKey]) monthly[monthKey] = [];
+        monthly[monthKey].push(trade.computed_pnl / (trade.notional || 1));
+      });
+      
+      return Object.values(monthly).map(returns => 
+        returns.reduce((a, b) => a + b, 0) / returns.length
+      );
+    }
+    
+    function calculateVolatility(returns) {
+      if (returns.length < 2) return 0;
+      const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const variance = returns.map(r => Math.pow(r - avgReturn, 2)).reduce((a, b) => a + b, 0) / returns.length;
+      return Math.sqrt(variance);
+    }
+    
+    function groupTradesByMonth(trades) {
+      const months = {};
+      trades.forEach(trade => {
+        const date = new Date(trade.exit_timestamp);
+        const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+        months[monthKey] = (months[monthKey] || 0) + 1;
+      });
+      return months;
+    }
+    
+    function calculateMonthlyPnL(trades) {
+      const monthly = {};
+      trades.forEach(trade => {
+        const date = new Date(trade.exit_timestamp);
+        const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+        monthly[monthKey] = (monthly[monthKey] || 0) + trade.computed_pnl;
+      });
+      return monthly;
+    }
+    
+    function calculateBestWinStreak(trades) {
+      let currentStreak = 0;
+      let bestStreak = 0;
+      
+      trades.sort((a, b) => new Date(a.exit_timestamp) - new Date(b.exit_timestamp));
+      
+      trades.forEach(trade => {
+        if (trade.computed_pnl > 0) {
+          currentStreak++;
+          bestStreak = Math.max(bestStreak, currentStreak);
+        } else {
+          currentStreak = 0;
+        }
+      });
+      
+      return bestStreak;
+    }
+
+    // ========== GRAPHIQUES ANALYTICS ==========
+    function initAnalyticsCharts() {
+      initPnlDistributionChart();
+      initSymbolPerformanceChart();
+    }
+    
+    function initPnlDistributionChart() {
+      const ctx = document.getElementById('pnlDistributionChart');
+      if (!ctx) return;
+      
+      const closedTrades = AppState.trades.filter(t => t.computed_pnl != null);
+      if (closedTrades.length === 0) return;
+      
+      const pnls = closedTrades.map(t => t.computed_pnl);
+      const minPnl = Math.min(...pnls);
+      const maxPnl = Math.max(...pnls);
+      const range = maxPnl - minPnl;
+      const binCount = Math.min(10, Math.ceil(Math.sqrt(closedTrades.length)));
+      const binSize = range / binCount;
+      
+      const bins = Array(binCount).fill(0);
+      pnls.forEach(pnl => {
+        const binIndex = Math.min(Math.floor((pnl - minPnl) / binSize), binCount - 1);
+        bins[binIndex]++;
+      });
+      
+      const labels = Array.from({length: binCount}, (_, i) => {
+        const start = minPnl + (i * binSize);
+        const end = start + binSize;
+        return `${start.toFixed(0)}-${end.toFixed(0)}`;
+      });
+      
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const backgroundColor = pnls.map(pnl => pnl >= 0 ? 'rgba(0, 196, 140, 0.7)' : 'rgba(255, 92, 99, 0.7)');
+      
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Nombre de trades',
+            data: bins,
+            backgroundColor: backgroundColor,
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'P&L (€)' },
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            },
+            y: {
+              title: { display: true, text: 'Fréquence' },
+              beginAtZero: true,
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            }
+          }
         }
       });
     }
     
-    function validateField(e) {
-      const field = e.target;
-      const fieldName = field.id;
-      const value = field.value;
+    function initSymbolPerformanceChart() {
+      const ctx = document.getElementById('symbolPerformanceChart');
+      if (!ctx) return;
       
-      const rules = {
-        symbol: { required: true, minLength: 1, pattern: /^[A-Za-z0-9]+$/ },
-        size: { required: true, min: 0.001 },
-        entry_price: { required: true, min: 0.001 }
-      };
+      const closedTrades = AppState.trades.filter(t => t.computed_pnl != null);
+      if (closedTrades.length === 0) return;
       
-      const rule = rules[fieldName];
-      if (!rule) return;
+      const symbolPerformance = {};
+      closedTrades.forEach(trade => {
+        if (!symbolPerformance[trade.symbol]) {
+          symbolPerformance[trade.symbol] = { total: 0, count: 0 };
+        }
+        symbolPerformance[trade.symbol].total += trade.computed_pnl;
+        symbolPerformance[trade.symbol].count++;
+      });
       
-      let isValid = true;
-      let message = '';
+      const symbols = Object.keys(symbolPerformance).slice(0, 10); // Top 10
+      const performances = symbols.map(symbol => symbolPerformance[symbol].total);
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       
-      if (rule.required && (!value || value.trim() === '')) {
-        isValid = false;
-        message = 'Ce champ est requis';
-      } else if (rule.minLength && value.length < rule.minLength) {
-        isValid = false;
-        message = `Minimum ${rule.minLength} caractères`;
-      } else if (rule.pattern && !rule.pattern.test(value)) {
-        isValid = false;
-        message = 'Format invalide';
-      } else if (rule.min && parseFloat(value) < rule.min) {
-        isValid = false;
-        message = `La valeur doit être supérieure à ${rule.min}`;
-      }
-      
-      // Mise à jour visuelle
-      field.classList.remove('input-valid', 'input-invalid');
-      field.classList.add(isValid ? 'input-valid' : 'input-invalid');
-      
-      // Message de validation
-      let validationElement = document.getElementById(fieldName + 'Validation');
-      if (!validationElement) {
-        validationElement = document.createElement('span');
-        validationElement.id = fieldName + 'Validation';
-        validationElement.className = 'validation-message';
-        field.parentNode.appendChild(validationElement);
-      }
-      
-      validationElement.textContent = message;
-      validationElement.className = `validation-message ${isValid ? 'valid' : 'invalid'}`;
-      validationElement.style.display = message ? 'block' : 'none';
-      
-      return isValid;
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: symbols,
+          datasets: [{
+            label: 'P&L Total (€)',
+            data: performances,
+            backgroundColor: performances.map(p => p >= 0 ? 'rgba(0, 196, 140, 0.7)' : 'rgba(255, 92, 99, 0.7)'),
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            }
+          }
+        }
+      });
     }
 
-    // ========== NOUVEAU: Gestion améliorée du thème ==========
+    // ========== GRAPHIQUES PLEIN ÉCRAN ==========
+    let fullscreenCharts = {};
+    
+    function initFullscreenCharts() {
+      const equityCtx = document.getElementById('fullscreenEquityChart');
+      const monthlyCtx = document.getElementById('fullscreenMonthlyChart');
+      const heatmapCtx = document.getElementById('fullscreenHeatmapChart');
+      
+      if (equityCtx) fullscreenCharts.equity = createFullscreenEquityChart(equityCtx);
+      if (monthlyCtx) fullscreenCharts.monthly = createFullscreenMonthlyChart(monthlyCtx);
+      if (heatmapCtx) fullscreenCharts.heatmap = createFullscreenHeatmapChart(heatmapCtx);
+    }
+    
+    function createFullscreenEquityChart(ctx) {
+      const closed = AppState.trades.filter(t => t.computed_pnl != null).sort((a, b) => 
+        new Date(a.exit_timestamp) - new Date(b.exit_timestamp)
+      );
+      
+      let equity = AppState.capital || 0;
+      let peak = equity;
+      const labels = [];
+      const equityData = [];
+      const drawdownData = [];
+      
+      labels.push('Début');
+      equityData.push(equity);
+      drawdownData.push(0);
+      
+      closed.forEach(trade => {
+        equity += trade.computed_pnl;
+        if (equity > peak) peak = equity;
+        const drawdown = ((peak - equity) / peak) * 100;
+        
+        const date = new Date(trade.exit_timestamp);
+        labels.push(date.toLocaleDateString('fr-FR'));
+        equityData.push(parseFloat(equity.toFixed(2)));
+        drawdownData.push(parseFloat(drawdown.toFixed(2)));
+      });
+      
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Equity',
+              data: equityData,
+              borderColor: 'var(--accent-green)',
+              backgroundColor: 'rgba(0, 196, 140, 0.1)',
+              fill: true,
+              yAxisID: 'y',
+              tension: 0.2
+            },
+            {
+              label: 'Drawdown (%)',
+              data: drawdownData,
+              borderColor: 'var(--accent-red)',
+              backgroundColor: 'rgba(255, 92, 99, 0.1)',
+              fill: false,
+              yAxisID: 'y1',
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'index', intersect: false },
+          stacked: false,
+          scales: {
+            x: {
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: { callback: value => value + '%' }
+            }
+          }
+        }
+      });
+    }
+    
+    function createFullscreenMonthlyChart(ctx) {
+      const closed = AppState.trades.filter(t => t.computed_pnl != null);
+      const monthlyPnL = {};
+      
+      closed.forEach(trade => {
+        const date = new Date(trade.exit_timestamp);
+        const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        monthlyPnL[monthKey] = (monthlyPnL[monthKey] || 0) + trade.computed_pnl;
+      });
+      
+      const months = Object.keys(monthlyPnL).sort();
+      const pnls = months.map(month => monthlyPnL[month]);
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'P&L Mensuel (€)',
+            data: pnls,
+            backgroundColor: pnls.map(pnl => pnl >= 0 ? 'rgba(0, 196, 140, 0.7)' : 'rgba(255, 92, 99, 0.7)'),
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            },
+            y: {
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            }
+          }
+        }
+      });
+    }
+    
+    function createFullscreenHeatmapChart(ctx) {
+      const closed = AppState.trades.filter(t => t.computed_pnl != null);
+      const hourlyPerformance = {};
+      
+      // Initialiser toutes les heures
+      for (let hour = 0; hour < 24; hour++) {
+        hourlyPerformance[hour] = { total: 0, count: 0 };
+      }
+      
+      closed.forEach(trade => {
+        const date = new Date(trade.exit_timestamp);
+        const hour = date.getHours();
+        hourlyPerformance[hour].total += trade.computed_pnl;
+        hourlyPerformance[hour].count++;
+      });
+      
+      const hours = Object.keys(hourlyPerformance).map(Number).sort((a, b) => a - b);
+      const avgPnls = hours.map(hour => 
+        hourlyPerformance[hour].count > 0 ? hourlyPerformance[hour].total / hourlyPerformance[hour].count : 0
+      );
+      
+      const maxPnl = Math.max(...avgPnls.map(Math.abs));
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: hours.map(h => `${h}h`),
+          datasets: [{
+            label: 'P&L Moyen par Heure (€)',
+            data: avgPnls,
+            backgroundColor: avgPnls.map(pnl => {
+              if (pnl === 0) return 'rgba(128, 128, 128, 0.7)';
+              const intensity = Math.abs(pnl) / maxPnl;
+              return pnl > 0 
+                ? `rgba(0, 196, 140, ${0.3 + intensity * 0.7})`
+                : `rgba(255, 92, 99, ${0.3 + intensity * 0.7})`;
+            }),
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            },
+            y: {
+              grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+            }
+          }
+        }
+      });
+    }
+    
+    function updateFullscreenCharts() {
+      Object.values(fullscreenCharts).forEach(chart => {
+        if (chart) chart.destroy();
+      });
+      initFullscreenCharts();
+    }
+
+    // ========== GESTION DE L'UI ==========
+    function updateSyncStatus(message, isSuccess = true) {
+      const statusElement = document.getElementById('syncStatus');
+      if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.style.color = isSuccess ? 'var(--accent-green)' : 'var(--accent-red)';
+      }
+      
+      const lastSyncElement = document.getElementById('lastSync');
+      if (lastSyncElement && isSuccess) {
+        lastSyncElement.textContent = `Sync: ${new Date().toLocaleTimeString()}`;
+      }
+    }
+    
+    function updateUIForUser() {
+      if (AppState.currentUser) {
+        document.getElementById('btnLogin').style.display = 'none';
+        document.getElementById('btnSignup').style.display = 'none';
+        document.getElementById('btnLogout').style.display = 'inline-block';
+        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('btnSyncNow').style.display = 'inline-block';
+        document.getElementById('userEmail').textContent = AppState.currentUser.email;
+        document.getElementById('settingsStatus').innerHTML = 'Synchronisation Firebase activée';
+        
+        updateSyncStatus('✅ Connecté • Synchronisation Firebase', true);
+      } else {
+        document.getElementById('btnLogin').style.display = 'inline-block';
+        document.getElementById('btnSignup').style.display = 'inline-block';
+        document.getElementById('btnLogout').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('btnSyncNow').style.display = 'none';
+        document.getElementById('settingsStatus').innerHTML = 'Sauvegarde locale • <a href="#" id="enableCloud">Activer la synchronisation cloud</a>';
+        
+        updateSyncStatus('⚡ Mode hors ligne • Données locales', false);
+      }
+    }
+
+    // ========== GESTION DU THÈME ==========
     function initTheme() {
       const savedTheme = localStorage.getItem('theme') || 'dark';
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
-      let theme = savedTheme;
-      if (savedTheme === 'auto') {
-        theme = systemPrefersDark ? 'dark' : 'light';
-      }
-      
-      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
       document.getElementById('themeSelect').value = savedTheme;
       
-      // Mettre à jour l'icône du bouton avec des icônes cohérentes
       const themeIcon = document.getElementById('themeToggle');
-      if (theme === 'dark') {
+      if (savedTheme === 'dark') {
         themeIcon.textContent = '🌙';
-        themeIcon.title = 'Passer en mode clair';
       } else {
         themeIcon.textContent = '☀️';
-        themeIcon.title = 'Passer en mode sombre';
       }
+    }
+    
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       
-      // Forcer le recalcul des graphiques
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      const themeIcon = document.getElementById('themeToggle');
+      themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+      
       setTimeout(() => {
         if (equityChart) {
           equityChart.destroy();
           initChart();
           updateChart();
         }
+        initAnalyticsCharts();
+        updateFullscreenCharts();
       }, 100);
     }
 
-    // ========== NOUVEAU: Gestion mobile améliorée ==========
+    // ========== GESTION MOBILE ==========
     function initMobileMenu() {
       const sidebar = document.getElementById('sidebar');
       const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -1482,13 +2211,11 @@
       function openSidebar() {
         sidebar.classList.add('active');
         mobileOverlay.classList.add('active');
-        disableScroll();
       }
       
       function closeSidebar() {
         sidebar.classList.remove('active');
         mobileOverlay.classList.remove('active');
-        enableScroll();
       }
       
       mobileMenuBtn.addEventListener('click', (e) => {
@@ -1502,33 +2229,14 @@
       
       mobileOverlay.addEventListener('click', closeSidebar);
       
-      // Fermer le sidebar en cliquant sur un lien
       sidebar.addEventListener('click', (e) => {
         if (e.target.classList.contains('nav-item') || e.target.closest('.nav-item')) {
           setTimeout(closeSidebar, 300);
         }
       });
-      
-      // Support du swipe pour fermer
-      let startX = 0;
-      sidebar.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-      });
-      
-      sidebar.addEventListener('touchmove', (e) => {
-        if (startX === 0) return;
-        
-        const currentX = e.touches[0].clientX;
-        const diff = startX - currentX;
-        
-        if (diff > 50) { // Swipe gauche détecté
-          closeSidebar();
-          startX = 0;
-        }
-      });
     }
 
-    // ========== NOUVEAU: Quick Add Trade ==========
+    // ========== QUICK ADD TRADE ==========
     function initQuickAdd() {
       const quickAdd = document.getElementById('quickAdd');
       const quickAddForm = document.getElementById('quickAddForm');
@@ -1565,8 +2273,7 @@
           score: 50,
           comment: 'Trade rapide',
           market: 'spot',
-          timezone: 'Europe/Paris',
-          is_backfilled: false
+          timezone: 'Europe/Paris'
         };
         
         newTrade.notional = newTrade.entry_price * newTrade.size;
@@ -1574,408 +2281,162 @@
         newTrade.duration_seconds = null;
         newTrade.updated_at = new Date().toISOString();
         
-        trades.unshift(newTrade);
-        persist();
-        renderAll();
-        quickAddForm.reset();
-        quickAdd.style.display = 'none';
-        
-        showAlert('Trade ajouté avec succès!', 'success');
+        try {
+          validateTrade(newTrade);
+          AppState.trades.unshift(newTrade);
+          AppState.persist();
+          renderAll();
+          quickAddForm.reset();
+          quickAdd.style.display = 'none';
+          showAlert('Trade ajouté avec succès!', 'success');
+        } catch (error) {
+          showAlert('Erreur: ' + error.message, 'error');
+        }
       });
     }
 
-    // ========== NOUVEAU: Heatmap amélioré ==========
-    function renderHeatmap() {
-      const container = document.getElementById('heatmap');
-      if (!container) return;
+    // ========== RENDU DES TRADES ==========
+    function renderTrades(){
+      const tradesList = document.getElementById('tradesList');
+      if (!tradesList) return;
       
-      container.innerHTML = '';
-      const days = 28;
-      const now = new Date();
+      tradesList.innerHTML='';
+      const recentTrades = AppState.trades.slice(0, 30);
       
-      // Calculer les min/max pour le gradient
-      const dailyPnLs = [];
-      for (let i = days - 1; i >= 0; i--) {
-        const day = new Date(now);
-        day.setDate(now.getDate() - i);
-        const iso = day.toISOString().slice(0, 10);
-        const daySum = trades
-          .filter(t => t.exit_timestamp && t.exit_timestamp.slice(0, 10) === iso)
-          .reduce((s, t) => s + (t.computed_pnl || 0), 0);
-        dailyPnLs.push(daySum);
+      if (recentTrades.length === 0) {
+        tradesList.innerHTML = '<div class="trade-row"><div class="mini">Aucun trade enregistré</div></div>';
+        return;
       }
       
-      const maxPnl = Math.max(...dailyPnLs.filter(p => p > 0).concat([1]));
-      const minPnl = Math.min(...dailyPnLs.filter(p => p < 0).concat([-1]));
-      
-      for (let i = days - 1; i >= 0; i--) {
-        const day = new Date(now);
-        day.setDate(now.getDate() - i);
-        const iso = day.toISOString().slice(0, 10);
-        const daySum = dailyPnLs[days - 1 - i];
+      recentTrades.forEach(tr => {
+        const row = document.createElement('div');
+        const pnl = tr.computed_pnl;
+        row.className = 'trade-row ' + (pnl == null ? '' : (pnl >= 0 ? 'win' : 'loss'));
+        row.setAttribute('role', 'button');
+        row.tabIndex = 0;
         
-        const el = document.createElement('div');
-        el.className = 'heat-square';
+        const pnlPercent = tr.computed_pnl == null ? '—' : 
+          ((tr.computed_pnl / (tr.notional || 1)) * 100).toFixed(2) + '%';
         
-        // Calcul de l'intensité de la couleur
-        let intensity = 0;
-        if (daySum > 0) {
-          intensity = Math.min(daySum / maxPnl, 1);
-          const alpha = 0.1 + (intensity * 0.3);
-          el.style.background = `rgba(0, 196, 140, ${alpha})`;
-          el.style.color = intensity > 0.5 ? 'white' : 'var(--accent-green)';
-        } else if (daySum < 0) {
-          intensity = Math.min(Math.abs(daySum) / Math.abs(minPnl), 1);
-          const alpha = 0.1 + (intensity * 0.3);
-          el.style.background = `rgba(255, 92, 99, ${alpha})`;
-          el.style.color = intensity > 0.5 ? 'white' : 'var(--accent-red)';
-        } else {
-          el.style.background = 'rgba(255, 255, 255, 0.05)';
-          el.style.color = 'var(--muted)';
-        }
+        row.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:56px;font-weight:700">${tr.symbol}</div>
+            <div style="min-width:120px">
+              <div class="mini">${tr.side.toUpperCase()}</div>
+              <div>${tr.size} @ ${tr.entry_price}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700">${pnl == null ? 'OUVERT' : (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' €'}</div>
+            <div class="mini">${pnlPercent}</div>
+          </div>
+        `;
         
-        el.setAttribute('role', 'button');
-        el.setAttribute('aria-label', `${iso} — ${daySum.toFixed(2)} €`);
-        el.setAttribute('data-tooltip', `${iso}\nP&L: ${daySum.toFixed(2)} €`);
-        
-        // Afficher le montant seulement si significatif
-        if (Math.abs(daySum) >= 1) {
-          el.textContent = Math.abs(Math.round(daySum));
-        }
-        
-        container.appendChild(el);
-      }
+        row.addEventListener('click', () => openTradeDetail(tr.id));
+        tradesList.appendChild(row);
+      });
     }
 
-    // ========== NOUVEAU: Best/Worst Trades ==========
-    function updateBestWorstTrades() {
-      const closedTrades = trades.filter(t => t.computed_pnl != null);
+    function renderAllTradesTable(){
+      const allTradesList = document.getElementById('allTradesList');
+      if (!allTradesList) return;
       
-      if (closedTrades.length > 0) {
-        const bestTrade = Math.max(...closedTrades.map(t => t.computed_pnl));
-        const worstTrade = Math.min(...closedTrades.map(t => t.computed_pnl));
-        
-        document.getElementById('bestTradeCard').textContent = `+${bestTrade.toFixed(2)} €`;
-        document.getElementById('worstTradeCard').textContent = `${worstTrade.toFixed(2)} €`;
-      } else {
-        document.getElementById('bestTradeCard').textContent = '-- €';
-        document.getElementById('worstTradeCard').textContent = '-- €';
+      allTradesList.innerHTML='';
+      
+      if (AppState.trades.length === 0) {
+        allTradesList.innerHTML = '<div class="trade-row"><div class="mini">Aucun trade enregistré</div></div>';
+        return;
       }
+      
+      AppState.trades.forEach(t => {
+        const r = document.createElement('div'); 
+        r.className = 'trade-row ' + (t.computed_pnl == null ? '' : (t.computed_pnl >= 0 ? 'win' : 'loss'));
+        r.style.cursor='pointer';
+        r.setAttribute('role', 'button');
+        r.tabIndex = 0;
+        
+        r.innerHTML = `
+          <div>
+            ${t.symbol} ${t.side}
+            ${t.comment ? `<div class="mini">${t.comment.substring(0, 30)}${t.comment.length > 30 ? '...' : ''}</div>` : ''}
+          </div>
+          <div>${t.computed_pnl == null ? 'OUVERT' : (t.computed_pnl >= 0 ? '+' : '') + t.computed_pnl.toFixed(2) + ' €'}</div>
+        `;
+        
+        r.addEventListener('click', () => openTradeDetail(t.id));
+        allTradesList.appendChild(r);
+      });
     }
 
-    // ========== CONFIGURATION SUPABASE (inchangée) ==========
-    const SUPABASE_URL = 'https://jbdtjiffupkqxomktzyd.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZHRqaWZmdXBrcXhvbWt0enlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNDAzMzUsImV4cCI6MjA3NjYxNjMzNX0.ZkZq-_246t2hzsQre4XN5EOak0Ey2JmSDyU2_ElNacc';
-    
-    // Initialisation Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // ========== FONCTIONS UTILITAIRES (inchangées) ==========
-    function cryptoRandomId(){ return 't_'+Math.random().toString(36).slice(2,10); }
-    
-    // Compute P&L
-    function computePnL(tr){ 
-      if(!tr || tr.exit_price == null || tr.entry_price == null || tr.size == null) return null; 
-      if(tr.entry_price <= 0 || tr.size <= 0) return null;
+    function renderStats(){
+      const closed = AppState.trades.filter(t => t.computed_pnl != null);
+      const wins = closed.filter(t => t.computed_pnl > 0);
+      const wr = closed.length ? Math.round((wins.length / closed.length) * 100) : 0;
       
-      let pnl;
-      if(tr.side === 'long') {
-        pnl = (tr.exit_price - tr.entry_price) * tr.size - (tr.fees || 0) - (tr.taxes || 0);
-      } else {
-        pnl = (tr.entry_price - tr.exit_price) * tr.size - (tr.fees || 0) - (tr.taxes || 0);
+      // Métriques de base
+      if (document.getElementById('winrate')) {
+        document.getElementById('winrate').textContent = wr + '%';
       }
-      return parseFloat(pnl.toFixed(2));
-    }
-    
-    // Safe date parsing
-    function safeDateParse(dateString) {
-      if (!dateString) return null;
-      const date = new Date(dateString);
-      return isNaN(date.getTime()) ? null : date;
-    }
-    
-    // Calculate duration in seconds
-    function calculateDuration(entryTimestamp, exitTimestamp) {
-      if (!entryTimestamp || !exitTimestamp) return null;
-      const entry = safeDateParse(entryTimestamp);
-      const exit = safeDateParse(exitTimestamp);
-      if (!entry || !exit) return null;
-      return Math.floor((exit - entry) / 1000);
-    }
-    
-    // Validate trade data
-    function validateTrade(t) {
-      if (!t.symbol || t.symbol.trim() === '') {
-        throw new Error('Le symbole est requis');
+      
+      const capitalDisplay = document.getElementById('capitalDisplay');
+      if (capitalDisplay) {
+        if (AppState.capital == null) { 
+          capitalDisplay.textContent = '--'; 
+        } else { 
+          const pnlSum = closed.reduce((s, t) => s + (t.computed_pnl || 0), 0); 
+          const newCapital = (AppState.capital + pnlSum).toFixed(2); 
+          capitalDisplay.textContent = newCapital; 
+        }
       }
-      if (!t.entry_price || t.entry_price <= 0) {
-        throw new Error('Le prix d\'entrée doit être positif');
-      }
-      if (!t.size || t.size <= 0) {
-        throw new Error('La taille doit être positive');
-      }
-      if (t.exit_price !== null && t.exit_price < 0) {
-        throw new Error('Le prix de sortie ne peut pas être négatif');
-      }
-      if (t.confidence < 0 || t.confidence > 100) {
-        throw new Error('La confiance doit être entre 0 et 100');
-      }
-      if (t.score < 0 || t.score > 100) {
-        throw new Error('La note doit être entre 0 et 100');
-      }
-      return true;
+      
+      // Best/Worst trades
+      const bestTrade = closed.length > 0 ? Math.max(...closed.map(t => t.computed_pnl)) : 0;
+      const worstTrade = closed.length > 0 ? Math.min(...closed.map(t => t.computed_pnl)) : 0;
+      
+      document.getElementById('bestTradeCard').textContent = bestTrade.toFixed(2) + ' €';
+      document.getElementById('worstTradeCard').textContent = worstTrade.toFixed(2) + ' €';
+      
+      // Analytics avancées
+      const metrics = calculateAdvancedMetrics();
+      
+      document.getElementById('profitFactor').textContent = metrics.profitFactor || '--';
+      document.getElementById('expectancy').textContent = metrics.expectancy || '--';
+      document.getElementById('maxDrawdown').textContent = metrics.maxDrawdown || '--';
+      document.getElementById('avgWinLossRatio').textContent = metrics.avgWinLossRatio || '--';
+      document.getElementById('sharpeRatio').textContent = metrics.sharpeRatio || '--';
+      document.getElementById('monthlyVolatility').textContent = metrics.monthlyVolatility || '--';
+      document.getElementById('avgDuration').textContent = metrics.avgDuration || '--';
+      document.getElementById('tradesPerMonth').textContent = metrics.tradesPerMonth || '--';
+      document.getElementById('winConsistency').textContent = metrics.winConsistency || '--';
+      document.getElementById('longPerformance').textContent = metrics.longPerformance || '--';
+      document.getElementById('shortPerformance').textContent = metrics.shortPerformance || '--';
+      document.getElementById('bestWinStreak').textContent = metrics.bestWinStreak || '--';
     }
 
-    // ========== GESTION DES DONNÉES (inchangée) ==========
-    const STORE_KEY = 'trading_journal_v4';
-    let trades = [];
-    let capital = null;
-    let currentEditing = null;
-    let currentUser = null;
-    
-    // Initialisation depuis localStorage
-    try {
-      const storedTrades = localStorage.getItem(STORE_KEY);
-      trades = storedTrades ? JSON.parse(storedTrades) : [];
-      
-      const storedCapital = localStorage.getItem('capital');
-      capital = storedCapital ? parseFloat(storedCapital) : null;
-      
-      // Validation des trades stockés
-      trades = trades.filter(t => t && t.id && t.symbol);
-    } catch (error) {
-      console.error('Error loading data from localStorage:', error);
-      trades = [];
-      capital = null;
+    function renderAll(){ 
+      renderTrades(); 
+      renderAllTradesTable(); 
+      renderStats(); 
+      updateChart();
+      initAnalyticsCharts();
     }
 
-    // ========== FONCTIONS SUPABASE (inchangées) ==========
-    
-    // Synchroniser les trades avec Supabase
-    async function syncTradesToCloud() {
-      if (!currentUser) return false;
-      
-      try {
-        // Préparer les données avec user_id
-        const tradesWithUserId = trades.map(trade => ({
-          ...trade,
-          user_id: currentUser.id,
-          updated_at: new Date().toISOString()
-        }));
-        
-        // Upsert dans Supabase
-        const { data, error } = await supabase
-          .from('trades')
-          .upsert(tradesWithUserId, { onConflict: 'id' });
-          
-        if (error) throw error;
-        
-        console.log(`${trades.length} trades synchronisés avec Supabase`);
-        updateSyncStatus('✅ Synchronisé avec le cloud', true);
-        return true;
-      } catch (error) {
-        console.error('Erreur de synchronisation:', error);
-        updateSyncStatus('❌ Erreur de sync - données locales sauvegardées', false);
-        return false;
-      }
-    }
-    
-    // Charger les trades depuis Supabase
-    async function loadTradesFromCloud() {
-      if (!currentUser) return false;
-      
-      try {
-        const { data: cloudTrades, error } = await supabase
-          .from('trades')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .order('entry_timestamp', { ascending: false });
-          
-        if (error) throw error;
-        
-        if (cloudTrades && cloudTrades.length > 0) {
-          // Fusionner avec les données locales (cloud prioritaire)
-          const localTradeIds = trades.map(t => t.id);
-          cloudTrades.forEach(cloudTrade => {
-            const existingIndex = trades.findIndex(t => t.id === cloudTrade.id);
-            if (existingIndex === -1) {
-              // Nouveau trade du cloud
-              trades.push(cloudTrade);
-            } else {
-              // Mettre à jour si le cloud est plus récent
-              const localUpdated = trades[existingIndex].updated_at || '1970-01-01';
-              const cloudUpdated = cloudTrade.updated_at || '1970-01-01';
-              if (new Date(cloudUpdated) > new Date(localUpdated)) {
-                trades[existingIndex] = cloudTrade;
-              }
-            }
-          });
-          
-          persistLocal();
-          renderAll();
-          console.log(`${cloudTrades.length} trades chargés depuis le cloud`);
-        }
-        
-        return true;
-      } catch (error) {
-        console.error('Erreur de chargement cloud:', error);
-        return false;
-      }
-    }
-    
-    // Authentification
-    async function signUp(email, password) {
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        return { success: true, data };
-      } catch (error) {
-        return { success: false, error: error.message };
-      }
-    }
-    
-    async function signIn(email, password) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        return { success: true, data };
-      } catch (error) {
-        return { success: false, error: error.message };
-      }
-    }
-    
-    async function signOut() {
-      const { error } = await supabase.auth.signOut();
-      if (error) console.error('Erreur de déconnexion:', error);
-    }
-    
-    // Vérifier la session active
-    async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        currentUser = session.user;
-        updateUIForUser();
-        await loadTradesFromCloud();
-        return true;
-      }
-      return false;
-    }
-    
-    // ========== GESTION LOCALE + CLOUD (inchangée) ==========
-    
-    function persistLocal() {
-      try {
-        localStorage.setItem(STORE_KEY, JSON.stringify(trades));
-        localStorage.setItem('capital', String(capital));
-        return true;
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-        showAlert('Erreur lors de la sauvegarde locale.', 'error');
-        return false;
-      }
-    }
-    
-    async function persist() {
-      // Sauvegarde locale immédiate
-      const localSuccess = persistLocal();
-      
-      // Synchronisation cloud si connecté
-      if (currentUser) {
-        await syncTradesToCloud();
-      }
-      
-      return localSuccess;
-    }
-    
-    // ========== UI ET ÉTATS (avec améliorations) ==========
-    
-    function updateSyncStatus(message, isSuccess = true) {
-      const statusElement = document.getElementById('syncStatus');
-      if (statusElement) {
-        statusElement.textContent = message;
-        statusElement.style.color = isSuccess ? 'var(--accent-green)' : 'var(--accent-red)';
-      }
-      
-      // Mettre à jour le dernier sync
-      const lastSyncElement = document.getElementById('lastSync');
-      if (lastSyncElement && isSuccess) {
-        lastSyncElement.textContent = `Dernière sync: ${new Date().toLocaleTimeString()}`;
-      }
-    }
-    
-    function updateUIForUser() {
-      if (currentUser) {
-        // Mode connecté
-        document.getElementById('btnLogin').style.display = 'none';
-        document.getElementById('btnSignup').style.display = 'none';
-        document.getElementById('btnLogout').style.display = 'inline-block';
-        document.getElementById('userInfo').style.display = 'block';
-        document.getElementById('btnSyncNow').style.display = 'inline-block';
-        document.getElementById('userEmail').textContent = currentUser.email;
-        document.getElementById('settingsStatus').innerHTML = 'Synchronisation cloud activée • <a href="#" id="disableCloud">Désactiver</a>';
-        
-        updateSyncStatus('✅ Connecté • Synchronisation cloud', true);
-      } else {
-        // Mode déconnecté
-        document.getElementById('btnLogin').style.display = 'inline-block';
-        document.getElementById('btnSignup').style.display = 'inline-block';
-        document.getElementById('btnLogout').style.display = 'none';
-        document.getElementById('userInfo').style.display = 'none';
-        document.getElementById('btnSyncNow').style.display = 'none';
-        document.getElementById('settingsStatus').innerHTML = 'Sauvegarde locale • <a href="#" id="enableCloud">Activer la synchronisation cloud</a>';
-        
-        updateSyncStatus('⚡ Mode hors ligne • Données locales', false);
-      }
+    // ========== GESTION DES VUES ==========
+    function showView(v){
+      document.getElementById('viewTitle').textContent = (
+        v==='dashboard'? 'Tableau de bord' : v==='trades'? 'Trades' : v==='analytics'? 'Analytics' : v==='import'? 'Import/Export' : 'Paramètres'
+      );
+      ['dashboardView','tradesView','analyticsView','importView','settingsView'].forEach(id=> 
+        document.getElementById(id).style.display = 'none');
+      if(v==='dashboard') document.getElementById('dashboardView').style.display='grid';
+      if(v==='trades') document.getElementById('tradesView').style.display='block';
+      if(v==='analytics') document.getElementById('analyticsView').style.display='block';
+      if(v==='import') document.getElementById('importView').style.display='block';
+      if(v==='settings') document.getElementById('settingsView').style.display='block';
     }
 
-    // ========== GESTION DU THÈME (améliorée) ==========
-    
-    function toggleTheme() {
-      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-      
-      // Mettre à jour l'icône
-      const themeIcon = document.getElementById('themeToggle');
-      themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
-      themeIcon.title = newTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre';
-      
-      // Mettre à jour les graphiques
-      setTimeout(() => {
-        if (equityChart) {
-          equityChart.destroy();
-          initChart();
-          updateChart();
-        }
-        
-        if (pnlDistributionChart) {
-          pnlDistributionChart.destroy();
-          initAnalyticsCharts();
-        }
-        
-        if (symbolPerformanceChart) {
-          symbolPerformanceChart.destroy();
-          initAnalyticsCharts();
-        }
-      }, 100);
-    }
-    
-    // ========== GRAPHIQUES (inchangés) ==========
-    
+    // ========== GRAPHIQUES ==========
     let equityChart = null;
-    let pnlDistributionChart = null;
-    let symbolPerformanceChart = null;
-    let fullscreenChart = null;
     
     function initChart() {
       const ctx = document.getElementById('equityChart');
@@ -2020,193 +2481,23 @@
             }
           },
           plugins:{
-            legend:{display:false},
-            tooltip: {
-              backgroundColor: 'var(--bg-card)',
-              titleColor: 'var(--fg)',
-              bodyColor: 'var(--fg)',
-              borderColor: 'var(--accent-green)',
-              borderWidth: 1,
-              callbacks: {
-                title: function(context) {
-                  return `Date: ${context[0].label}`;
-                },
-                label: function(context) {
-                  return `Capital: €${context.parsed.y.toFixed(2)}`;
-                }
-              }
-            }
-          },
-          interaction: {
-            intersect: false,
-            mode: 'index'
+            legend:{display:false}
           }
         }
       });
-    }
-    
-    function initFullscreenChart() {
-      const ctx = document.getElementById('fullscreenChart');
-      if (!ctx) return;
-      
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-      const textColor = isDark ? 'var(--muted)' : 'var(--muted)';
-      
-      fullscreenChart = new Chart(ctx.getContext('2d'), { 
-        type: 'line', 
-        data: {
-          labels:[],
-          datasets:[{
-            label:'Equity',
-            data:[],
-            fill: true,
-            tension: 0.2,
-            backgroundColor: 'rgba(0, 196, 140, 0.1)',
-            borderColor: 'var(--accent-green)',
-            borderWidth: 3,
-            pointBackgroundColor: 'var(--accent-green)',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          }]
-        }, 
-        options:{
-          responsive: true,
-          maintainAspectRatio: false,
-          scales:{
-            x:{
-              display: true,
-              grid: { color: gridColor },
-              ticks: { color: textColor }
-            },
-            y:{
-              beginAtZero:false,
-              grid: { color: gridColor },
-              ticks: { color: textColor }
-            }
-          },
-          plugins:{
-            legend:{display:false},
-            tooltip: {
-              backgroundColor: 'var(--bg-card)',
-              titleColor: 'var(--fg)',
-              bodyColor: 'var(--fg)',
-              borderColor: 'var(--accent-green)',
-              borderWidth: 1,
-              callbacks: {
-                title: function(context) {
-                  return `Date: ${context[0].label}`;
-                },
-                label: function(context) {
-                  return `Capital: €${context.parsed.y.toFixed(2)}`;
-                }
-              }
-            }
-          },
-          interaction: {
-            intersect: false,
-            mode: 'index'
-          }
-        }
-      });
-    }
-    
-    function initAnalyticsCharts() {
-      // Distribution des P&L
-      const pnlCtx = document.getElementById('pnlDistributionChart');
-      if (pnlCtx) {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-        const textColor = isDark ? 'var(--muted)' : 'var(--muted)';
-        
-        pnlDistributionChart = new Chart(pnlCtx.getContext('2d'), {
-          type: 'bar',
-          data: {
-            labels: [],
-            datasets: [{
-              label: 'Nombre de trades',
-              data: [],
-              backgroundColor: 'var(--accent-green)',
-              borderColor: 'var(--accent-green)',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: {
-                grid: { color: gridColor },
-                ticks: { color: textColor }
-              },
-              y: {
-                grid: { color: gridColor },
-                ticks: { color: textColor }
-              }
-            },
-            plugins: {
-              legend: {
-                display: false
-              }
-            }
-          }
-        });
-      }
-      
-      // Performance par symbole
-      const symbolCtx = document.getElementById('symbolPerformanceChart');
-      if (symbolCtx) {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-        const textColor = isDark ? 'var(--muted)' : 'var(--muted)';
-        
-        symbolPerformanceChart = new Chart(symbolCtx.getContext('2d'), {
-          type: 'bar',
-          data: {
-            labels: [],
-            datasets: [{
-              label: 'P&L Total',
-              data: [],
-              backgroundColor: [],
-              borderColor: [],
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: {
-                grid: { color: gridColor },
-                ticks: { color: textColor }
-              },
-              y: {
-                grid: { color: gridColor },
-                ticks: { color: textColor }
-              }
-            },
-            plugins: {
-              legend: {
-                display: false
-              }
-            }
-          }
-        });
-      }
     }
     
     function updateChart(){ 
       if (!equityChart) return;
       
-      const closed = trades.filter(t => t.computed_pnl != null).slice().reverse(); 
-      let eq = capital || 0; 
+      const closed = AppState.trades.filter(t => t.computed_pnl != null).slice().reverse(); 
+      let eq = AppState.capital || 0; 
       const labels = []; 
       const data = []; 
       
-      // Start with initial capital
-      if (capital != null) {
+      if (AppState.capital != null) {
         labels.push('Début');
-        data.push(parseFloat(capital.toFixed(2)));
+        data.push(parseFloat(AppState.capital.toFixed(2)));
       }
       
       closed.forEach(t => { 
@@ -2216,365 +2507,27 @@
         data.push(parseFloat(eq.toFixed(2))); 
       }); 
       
-      if(data.length === 0 && capital != null){ 
+      if(data.length === 0 && AppState.capital != null){ 
         equityChart.data.labels = ['Début']; 
-        equityChart.data.datasets[0].data = [capital]; 
+        equityChart.data.datasets[0].data = [AppState.capital]; 
       } else { 
         equityChart.data.labels = labels; 
         equityChart.data.datasets[0].data = data; 
       } 
       
       equityChart.update();
-      
-      // Mettre à jour aussi le graphique plein écran s'il est ouvert
-      if (fullscreenChart) {
-        fullscreenChart.data.labels = labels;
-        fullscreenChart.data.datasets[0].data = data;
-        fullscreenChart.update();
-      }
     }
-    
-    function updateAnalytics() {
-      if (!pnlDistributionChart || !symbolPerformanceChart) return;
-      
-      const closedTrades = trades.filter(t => t.computed_pnl != null);
-      
-      // Calcul des métriques
-      const totalWins = closedTrades.filter(t => t.computed_pnl > 0).reduce((sum, t) => sum + t.computed_pnl, 0);
-      const totalLosses = Math.abs(closedTrades.filter(t => t.computed_pnl < 0).reduce((sum, t) => sum + t.computed_pnl, 0));
-      const profitFactor = totalLosses > 0 ? (totalWins / totalLosses).toFixed(2) : '∞';
-      
-      const winningTrades = closedTrades.filter(t => t.computed_pnl > 0);
-      const losingTrades = closedTrades.filter(t => t.computed_pnl < 0);
-      const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + t.computed_pnl, 0) / winningTrades.length : 0;
-      const avgLoss = losingTrades.length > 0 ? losingTrades.reduce((sum, t) => sum + Math.abs(t.computed_pnl), 0) / losingTrades.length : 0;
-      const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) : 0;
-      const lossRate = 1 - winRate;
-      const expectancy = (winRate * avgWin) - (lossRate * avgLoss);
-      
-      // Maximum Drawdown
-      let maxDrawdown = 0;
-      let peak = capital || 0;
-      let current = capital || 0;
-      
-      closedTrades.forEach(trade => {
-        current += trade.computed_pnl;
-        if (current > peak) {
-          peak = current;
-        }
-        const drawdown = ((peak - current) / peak) * 100;
-        if (drawdown > maxDrawdown) {
-          maxDrawdown = drawdown;
-        }
-      });
-      
-      // Ratio Gain/Perte moyen
-      const avgWinLossRatio = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : '∞';
-      
-      // Durée moyenne
-      const durations = closedTrades.map(t => t.duration_seconds).filter(d => d != null);
-      const avgDuration = durations.length > 0 ? (durations.reduce((a, b) => a + b, 0) / durations.length) / (24 * 3600) : 0;
-      
-      // Trades par mois
-      const tradesByMonth = {};
-      closedTrades.forEach(trade => {
-        const month = trade.exit_timestamp ? trade.exit_timestamp.substring(0, 7) : 'Inconnu';
-        tradesByMonth[month] = (tradesByMonth[month] || 0) + 1;
-      });
-      const tradesPerMonth = Object.values(tradesByMonth).length > 0 ? 
-        (Object.values(tradesByMonth).reduce((a, b) => a + b, 0) / Object.values(tradesByMonth).length).toFixed(1) : 0;
-      
-      // Meilleur et pire trade
-      const bestTrade = closedTrades.length > 0 ? Math.max(...closedTrades.map(t => t.computed_pnl)) : 0;
-      const worstTrade = closedTrades.length > 0 ? Math.min(...closedTrades.map(t => t.computed_pnl)) : 0;
-      
-      // Mettre à jour les métriques
-      document.getElementById('profitFactor').textContent = profitFactor;
-      document.getElementById('expectancy').textContent = expectancy.toFixed(2) + ' €';
-      document.getElementById('maxDrawdown').textContent = maxDrawdown.toFixed(1) + '%';
-      document.getElementById('avgWinLossRatio').textContent = avgWinLossRatio;
-      document.getElementById('avgDuration').textContent = avgDuration.toFixed(1);
-      document.getElementById('tradesPerMonth').textContent = tradesPerMonth;
-      document.getElementById('bestTrade').textContent = bestTrade.toFixed(2) + ' €';
-      document.getElementById('worstTrade').textContent = worstTrade.toFixed(2) + ' €';
-      
-      // Mettre à jour le graphique de distribution des P&L
-      if (pnlDistributionChart) {
-        const pnlValues = closedTrades.map(t => t.computed_pnl);
-        const minPnl = Math.min(...pnlValues);
-        const maxPnl = Math.max(...pnlValues);
-        const range = maxPnl - minPnl;
-        const binCount = 10;
-        const binSize = range / binCount;
-        
-        const bins = Array(binCount).fill(0);
-        const binLabels = [];
-        
-        for (let i = 0; i < binCount; i++) {
-          const binStart = minPnl + (i * binSize);
-          const binEnd = binStart + binSize;
-          binLabels.push(`${binStart.toFixed(0)} à ${binEnd.toFixed(0)}`);
-          
-          pnlValues.forEach(pnl => {
-            if (pnl >= binStart && pnl < binEnd) {
-              bins[i]++;
-            }
-          });
-        }
-        
-        pnlDistributionChart.data.labels = binLabels;
-        pnlDistributionChart.data.datasets[0].data = bins;
-        pnlDistributionChart.update();
-      }
-      
-      // Mettre à jour le graphique performance par symbole
-      if (symbolPerformanceChart) {
-        const symbolPerformance = {};
-        closedTrades.forEach(trade => {
-          if (!symbolPerformance[trade.symbol]) {
-            symbolPerformance[trade.symbol] = 0;
-          }
-          symbolPerformance[trade.symbol] += trade.computed_pnl;
-        });
-        
-        const symbols = Object.keys(symbolPerformance);
-        const performances = Object.values(symbolPerformance);
-        
-        // Générer des couleurs
-        const colors = performances.map(pnl => 
-          pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'
-        );
-        
-        symbolPerformanceChart.data.labels = symbols;
-        symbolPerformanceChart.data.datasets[0].data = performances;
-        symbolPerformanceChart.data.datasets[0].backgroundColor = colors;
-        symbolPerformanceChart.data.datasets[0].borderColor = colors;
-        symbolPerformanceChart.update();
-      }
-    }
-    
-    // ========== GESTION PLEIN ÉCRAN GRAPHIQUE ==========
-    
-    function openChartFullscreen() {
-      document.getElementById('chartModal').style.display = 'flex';
-      disableScroll();
-      initFullscreenChart();
-      updateChart(); // Pour mettre à jour les données
-    }
-    
-    // ========== INITIALISATION AMÉLIORÉE ==========
-    
-    // Éléments UI
-    const modal = document.getElementById('modalBackdrop');
-    const authModal = document.getElementById('authModal');
-    const tradeForm = document.getElementById('tradeForm');
-    const authForm = document.getElementById('authForm');
-    const chartModal = document.getElementById('chartModal');
-    const fabButton = document.getElementById('fabButton');
-    
-    async function initApp() {
-      // Initialiser le thème
-      initTheme();
-      
-      // Initialiser le menu mobile amélioré
-      initMobileMenu();
-      
-      // Initialiser Quick Add
-      initQuickAdd();
-      
-      // Initialiser la validation des champs
-      setupFieldValidation();
-      
-      // Vérifier l'authentification au chargement
-      await checkAuth();
-      
-      // Initialiser les graphiques
-      initChart();
-      initAnalyticsCharts();
-      
-      // Rendu initial
-      renderAll();
-      
-      // Charger le capital sauvegardé
-      if (capital != null) {
-        document.getElementById('topCapital').value = capital;
-        document.getElementById('settingsCapital').value = capital;
-      }
-      
-      // Écouter les changements d'authentification
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          currentUser = session.user;
-          updateUIForUser();
-          await loadTradesFromCloud();
-        } else if (event === 'SIGNED_OUT') {
-          currentUser = null;
-          updateUIForUser();
-        }
-      });
 
-      // NOUVEAU: Événement FAB
-      fabButton.addEventListener('click', () => {
-        openNewTrade();
-      });
-    }
-    
-    // ========== GESTION DES ÉVÉNEMENTS (avec améliorations) ==========
-    
-    // Navigation
-    document.addEventListener('click', (e)=>{
-      // Navigation par onglets
-      if (e.target.matches('.nav-item')) {
-        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-        e.target.classList.add('active');
-        const view = e.target.getAttribute('data-view');
-        showView(view);
-      }
-      
-      // Tabs d'authentification
-      if (e.target.matches('.auth-tab')) {
-        document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
-        e.target.classList.add('active');
-        const tabType = e.target.getAttribute('data-tab');
-        
-        if (tabType === 'login') {
-          document.getElementById('authTitle').textContent = 'Connexion';
-          document.getElementById('authSubmit').textContent = 'Se connecter';
-          document.getElementById('authConfirmPassword').style.display = 'none';
-        } else {
-          document.getElementById('authTitle').textContent = 'Inscription';
-          document.getElementById('authSubmit').textContent = 'S\'inscrire';
-          document.getElementById('authConfirmPassword').style.display = 'block';
-        }
-      }
-    });
-    
-    function showView(v){
-      document.getElementById('viewTitle').textContent = (
-        v==='dashboard'? 'Tableau de bord' : v==='trades'? 'Trades' : v==='analytics'? 'Analytics' : v==='import'? 'Import/Export' : 'Paramètres'
-      );
-      ['dashboardView','tradesView','analyticsView','importView','settingsView'].forEach(id=> 
-        document.getElementById(id).style.display = 'none');
-      if(v==='dashboard') document.getElementById('dashboardView').style.display='grid';
-      if(v==='trades') document.getElementById('tradesView').style.display='block';
-      if(v==='analytics') document.getElementById('analyticsView').style.display='block';
-      if(v==='import') document.getElementById('importView').style.display='block';
-      if(v==='settings') document.getElementById('settingsView').style.display='block';
-      
-      // Mettre à jour les analytics si on affiche cette vue
-      if (v === 'analytics') {
-        updateAnalytics();
-      }
-    }
-    
-    // Thème
-    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-    document.getElementById('themeSelect').addEventListener('change', function() {
-      const selectedTheme = this.value;
-      localStorage.setItem('theme', selectedTheme);
-      initTheme();
-    });
-    
-    // Plein écran graphique
-    document.querySelector('.chart-fullscreen-btn').addEventListener('click', openChartFullscreen);
-    document.getElementById('closeChartModal').addEventListener('click', () => {
-      document.getElementById('chartModal').style.display = 'none';
-      enableScroll();
-    });
-    
-    // Authentification
-    document.getElementById('btnLogin').addEventListener('click', () => {
-      document.getElementById('authTitle').textContent = 'Connexion';
-      document.getElementById('authSubmit').textContent = 'Se connecter';
-      document.getElementById('authConfirmPassword').style.display = 'none';
-      document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
-      document.querySelector('[data-tab="login"]').classList.add('active');
-      authModal.style.display = 'flex';
-      disableScroll();
-    });
-    
-    document.getElementById('btnSignup').addEventListener('click', () => {
-      document.getElementById('authTitle').textContent = 'Inscription';
-      document.getElementById('authSubmit').textContent = 'S\'inscrire';
-      document.getElementById('authConfirmPassword').style.display = 'block';
-      document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
-      document.querySelector('[data-tab="signup"]').classList.add('active');
-      authModal.style.display = 'flex';
-      disableScroll();
-    });
-    
-    document.getElementById('btnLogout').addEventListener('click', async () => {
-      showConfirm('Voulez-vous vraiment vous déconnecter?', async () => {
-        await signOut();
-        currentUser = null;
-        updateUIForUser();
-        showAlert('Déconnexion réussie', 'success');
-      });
-    });
-    
-    document.getElementById('btnSyncNow').addEventListener('click', async () => {
-      showAlert('Synchronisation en cours...', 'info');
-      await syncTradesToCloud();
-    });
-    
-    // Formulaire d'authentification
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const email = document.getElementById('authEmail').value;
-      const password = document.getElementById('authPassword').value;
-      const isLogin = document.getElementById('authTitle').textContent === 'Connexion';
-      
-      let result;
-      if (isLogin) {
-        result = await signIn(email, password);
-      } else {
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        if (password !== confirmPassword) {
-          document.getElementById('authMessage').textContent = 'Les mots de passe ne correspondent pas';
-          document.getElementById('authMessage').style.color = 'var(--accent-red)';
-          return;
-        }
-        result = await signUp(email, password);
-      }
-      
-      if (result.success) {
-        document.getElementById('authMessage').textContent = isLogin ? 'Connexion réussie!' : 'Inscription réussie!';
-        document.getElementById('authMessage').style.color = 'var(--accent-green)';
-        setTimeout(() => {
-          authModal.style.display = 'none';
-          authForm.reset();
-          enableScroll();
-        }, 1500);
-      } else {
-        document.getElementById('authMessage').textContent = result.error;
-        document.getElementById('authMessage').style.color = 'var(--accent-red)';
-      }
-    });
-    
-    // Fermer les modals avec gestion du scroll
-    document.getElementById('closeAuthModal').addEventListener('click', () => {
-      authModal.style.display = 'none';
-      authForm.reset();
-      enableScroll();
-    });
-    
-    // Sidebar buttons
-    document.getElementById('btnNewTrade').addEventListener('click', ()=> openNewTrade());
-    document.getElementById('openNew').addEventListener('click', ()=> openNewTrade());
-    document.getElementById('btnImport').addEventListener('click', ()=> showView('import'));
-
-    // Open new trade modal - AVEC FOCUS AUTOMATIQUE
+    // ========== GESTION DES FORMULAIRES ==========
     function openNewTrade(prefill = {}){
+      const modal = document.getElementById('modalBackdrop');
       modal.style.display='flex';
-      disableScroll();
       document.getElementById('modalTitle').textContent = prefill.id ? 'Modifier trade' : 'Nouveau trade';
-      tradeForm.reset();
+      document.getElementById('tradeForm').reset();
       document.getElementById('deleteTrade').style.display = prefill.id ? 'inline-block':'none';
       
-      // Prefill form
       for(const k in prefill){ 
-        const el = tradeForm.elements[k]; 
+        const el = document.getElementById(k); 
         if(el) {
           if (k === 'entry_timestamp' || k === 'exit_timestamp') {
             const date = safeDateParse(prefill[k]);
@@ -2587,485 +2540,555 @@
         }
       }
       
-      currentEditing = prefill.id || null;
-      
-      // NOUVEAU: Focus automatique après un délai
-      setTimeout(() => { 
-        const symbolField = tradeForm.elements['symbol'];
-        if (symbolField) {
-          symbolField.focus();
-          symbolField.select();
-        }
-      }, 100);
-    }
-
-    // Close modal avec gestion du scroll
-    document.getElementById('closeModal').addEventListener('click', ()=>{ 
-      modal.style.display='none'; 
-      currentEditing = null; 
-      enableScroll();
-    });
-
-    // Close modal on backdrop click
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.style.display = 'none';
-        currentEditing = null;
-        enableScroll();
-      }
-    });
-
-    // Save capital from top input - AVEC TOAST
-    document.getElementById('saveCapital').addEventListener('click', ()=>{
-      const v = document.getElementById('topCapital').value;
-      const num = parseFloat(v);
-      if(isNaN(num) || num < 0) {
-        showAlert('Capital non valide. Doit être un nombre positif.', 'error');
-        return;
-      }
-      capital = num; 
-      localStorage.setItem('capital', String(capital)); 
-      renderStats();
-      showAlert('Capital sauvegardé: €'+capital.toFixed(2), 'success');
-    });
-
-    // Settings save - AVEC TOAST
-    document.getElementById('saveSettings').addEventListener('click', ()=>{
-      const v = document.getElementById('settingsCapital').value; 
-      const num = parseFloat(v);
-      if(isNaN(num) || num < 0) {
-        showAlert('Capital non valide. Doit être un nombre positif.', 'error');
-        return;
-      }
-      capital = num; 
-      localStorage.setItem('capital', String(capital)); 
-      showAlert('Paramètres sauvegardés', 'success'); 
-      renderStats();
-    });
-
-    // Delete all trades - AVEC CONFIRMATION TOAST
-    document.getElementById('clearAll').addEventListener('click', ()=>{ 
-      showConfirm('Supprimer tous les trades? Cette action est irréversible.', () => {
-        trades = []; 
-        persist(); 
-        renderAll();
-        showAlert('Tous les trades ont été supprimés', 'success');
-      });
-    });
-
-    // Export CSV - AVEC TOAST
-    document.getElementById('exportCSV').addEventListener('click', ()=>{
-      if(trades.length === 0) {
-        showAlert('Aucun trade à exporter', 'warning');
-        return;
-      }
-      
-      try {
-        const headers = ['id','symbol','side','entry_price','exit_price','size','fees','taxes','entry_timestamp','exit_timestamp','confidence','score','comment','is_backfilled'];
-        const rows = trades.map(t => headers.map(h => {
-          const value = t[h] ?? '';
-          return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-        }).join(','));
-        
-        const csv = headers.join(',') + '\n' + rows.join('\n');
-        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); 
-        a.href = url; 
-        a.download = `trades_export_${new Date().toISOString().slice(0,10)}.csv`; 
-        a.click(); 
-        URL.revokeObjectURL(url);
-        showAlert('Export CSV réussi!', 'success');
-      } catch (error) {
-        console.error('Error exporting CSV:', error);
-        showAlert('Erreur lors de l\'export CSV', 'error');
-      }
-    });
-
-    document.getElementById('exportCSV2').addEventListener('click', () => {
-      document.getElementById('exportCSV').click();
-    });
-
-    document.getElementById('importCSV').addEventListener('click', () => {
-      document.getElementById('csvFile').click();
-    });
-
-    // CSV Import - AVEC TOAST
-    document.getElementById('csvFile').addEventListener('change', e => { 
-      const f = e.target.files[0]; 
-      if(!f) return; 
-      const reader = new FileReader(); 
-      reader.onload = ev => {
-        try {
-          parseAndInsertCSV(ev.target.result);
-        } catch (error) {
-          console.error('Error parsing CSV:', error);
-          showAlert('Erreur lors de l\'import CSV: ' + error.message, 'error');
-        }
-      }; 
-      reader.onerror = () => showAlert('Erreur de lecture du fichier', 'error');
-      reader.readAsText(f); 
-    });
-
-    function parseAndInsertCSV(text){
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      if(lines.length < 2) {
-        showAlert('CSV vide ou format invalide', 'warning');
-        return;
-      }
-      
-      const headers = lines[0].split(',').map(h => h.trim());
-      let importedCount = 0;
-      
-      for(let i = 1; i < lines.length; i++){
-        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-        if(cols.length < 2) continue;
-        
-        const obj = {}; 
-        headers.forEach((h, idx) => obj[h] = cols[idx] || '');
-        
-        try {
-          const t = {
-            id: obj.id || cryptoRandomId(), 
-            symbol: obj.symbol || 'UNK', 
-            side: (obj.side || 'long').toLowerCase(), 
-            entry_price: parseFloat(obj.entry_price || 0), 
-            exit_price: obj.exit_price ? parseFloat(obj.exit_price) : null, 
-            size: parseFloat(obj.size || 1), 
-            fees: parseFloat(obj.fees || 0), 
-            taxes: parseFloat(obj.taxes || 0), 
-            entry_timestamp: obj.entry_timestamp ? safeDateParse(obj.entry_timestamp)?.toISOString() || new Date().toISOString() : new Date().toISOString(), 
-            exit_timestamp: obj.exit_timestamp ? safeDateParse(obj.exit_timestamp)?.toISOString() || null : null, 
-            confidence: parseInt(obj.confidence || 50), 
-            score: parseInt(obj.score || 50), 
-            comment: obj.comment || '', 
-            is_backfilled: obj.is_backfilled === 'true',
-            timezone: obj.timezone || 'Europe/Paris'
-          };
-          
-          validateTrade(t);
-          
-          t.notional = t.entry_price * t.size;
-          t.computed_pnl = computePnL(t);
-          t.duration_seconds = calculateDuration(t.entry_timestamp, t.exit_timestamp);
-          
-          trades.push(t);
-          importedCount++;
-        } catch (error) {
-          console.warn(`Ligne ${i+1} ignorée:`, error.message);
-        }
-      }
-      
-      if (persist()) {
-        renderAll(); 
-        showAlert(`Import terminé: ${importedCount} trades importés sur ${lines.length - 1}`, 'success');
-      }
-      
-      document.getElementById('csvFile').value = '';
-    }
-
-    // Trade form submit (create or update) - AVEC VALIDATION
-    tradeForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      try {
-        const fd = new FormData(tradeForm);
-        const t = Object.fromEntries(fd.entries());
-        
-        t.size = parseFloat(t.size || 0);
-        t.entry_price = parseFloat(t.entry_price || 0);
-        t.exit_price = t.exit_price ? parseFloat(t.exit_price) : null;
-        t.fees = parseFloat(t.fees || 0);
-        t.taxes = parseFloat(t.taxes || 0);
-        t.confidence = parseInt(t.confidence || 0);
-        t.score = parseInt(t.score || 0);
-        
-        t.entry_timestamp = t.entry_timestamp ? new Date(t.entry_timestamp).toISOString() : new Date().toISOString();
-        t.exit_timestamp = t.exit_timestamp ? new Date(t.exit_timestamp).toISOString() : null;
-        
-        validateTrade(t);
-        
-        t.notional = (t.entry_price || 0) * (t.size || 0);
-        t.computed_pnl = computePnL(t);
-        t.duration_seconds = calculateDuration(t.entry_timestamp, t.exit_timestamp);
-        t.is_backfilled = t.is_backfilled === 'true' || false;
-        t.updated_at = new Date().toISOString();
-        
-        if(currentEditing){
-          const idx = trades.findIndex(x => x.id === currentEditing);
-          if(idx >= 0){ 
-            t.id = currentEditing; 
-            trades[idx] = t; 
-          }
-        } else { 
-          t.id = cryptoRandomId(); 
-          trades.unshift(t); 
-        }
-        
-        if (await persist()) {
-          renderAll(); 
-          modal.style.display='none'; 
-          currentEditing = null; 
-          tradeForm.reset();
-          enableScroll();
-          showAlert(currentEditing ? 'Trade modifié avec succès!' : 'Trade créé avec succès!', 'success');
-        }
-      } catch (error) {
-        showAlert('Erreur: ' + error.message, 'error');
-      }
-    });
-
-    // Now buttons for entry/exit timestamps and delete/backfill
-    document.getElementById('btnNowEntry').addEventListener('click', ()=>{ 
-      const now = new Date();
-      tradeForm.elements['entry_timestamp'].value = now.toISOString().slice(0,16); 
-    });
-    
-    document.getElementById('btnNowExit').addEventListener('click', ()=>{ 
-      const now = new Date();
-      tradeForm.elements['exit_timestamp'].value = now.toISOString().slice(0,16); 
-    });
-    
-    document.getElementById('markBackfill').addEventListener('click', ()=>{ 
-      if(!tradeForm.elements['is_backfilled']){
-        const hidden = document.createElement('input'); 
-        hidden.type='hidden'; 
-        hidden.name='is_backfilled'; 
-        hidden.value='true'; 
-        tradeForm.appendChild(hidden);
-      } else {
-        tradeForm.elements['is_backfilled'].value = 'true';
-      }
-      showAlert('Le trade sera marqué comme passé lors de l\'enregistrement', 'info');
-    });
-    
-    document.getElementById('deleteTrade').addEventListener('click', ()=>{
-      if(!currentEditing) return; 
-      showConfirm('Supprimer ce trade ?', () => {
-        trades = trades.filter(t => t.id !== currentEditing); 
-        persist(); 
-        renderAll(); 
-        modal.style.display='none'; 
-        currentEditing = null;
-        enableScroll();
-        showAlert('Trade supprimé', 'success');
-      });
-    });
-
-    // Render functions - AVEC BEST/WORST TRADES
-    function renderTrades(){
-      if (!tradesList) return;
-      
-      tradesList.innerHTML='';
-      const recentTrades = trades.slice(0, 30);
-      
-      if (recentTrades.length === 0) {
-        tradesList.innerHTML = '<div class="empty-state"><div class="mini">Aucun trade enregistré</div></div>';
-        return;
-      }
-      
-      recentTrades.forEach(tr => {
-        const row = document.createElement('div');
-        const pnl = tr.computed_pnl;
-        row.className = 'trade-row ' + (pnl == null ? '' : (pnl >= 0 ? 'win' : 'loss'));
-        row.setAttribute('role', 'button');
-        row.tabIndex = 0;
-        
-        const pnlPercent = tr.computed_pnl == null ? '—' : 
-          ((tr.computed_pnl / (tr.notional || 1)) * 100).toFixed(2) + '%';
-        
-        row.innerHTML = `
-          <div style="display:flex;gap:12px;align-items:center">
-            <div style="width:56px;font-weight:700">${tr.symbol}</div>
-            <div style="min-width:120px">
-              <div class="mini">${tr.side.toUpperCase()}</div>
-              <div>${tr.size} @ ${tr.entry_price}</div>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-weight:700">${pnl == null ? 'OUVERT' : (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' €'}</div>
-            <div class="mini">${pnlPercent}</div>
-          </div>
-        `;
-        
-        row.addEventListener('click', () => openTradeDetail(tr.id));
-        row.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openTradeDetail(tr.id);
-          }
-        });
-        
-        tradesList.appendChild(row);
-      });
-    }
-
-    function renderAll(){ 
-      requestAnimationFrame(() => {
-        renderTrades(); 
-        renderAllTradesTable(); 
-        renderStats(); 
-        renderHeatmap(); 
-        updateChart(); 
-        updateAnalytics();
-        updateBestWorstTrades(); // NOUVEAU
-      });
-    }
-
-    function renderAllTradesTable(){
-      if (!allTradesList) return;
-      
-      allTradesList.innerHTML='';
-      
-      if (trades.length === 0) {
-        allTradesList.innerHTML = '<div class="empty-state"><div class="mini">Aucun trade enregistré</div></div>';
-        return;
-      }
-      
-      trades.forEach(t => {
-        const r = document.createElement('div'); 
-        r.className = 'trade-row ' + (t.computed_pnl == null ? '' : (t.computed_pnl >= 0 ? 'win' : 'loss'));
-        r.style.cursor='pointer';
-        r.setAttribute('role', 'button');
-        r.tabIndex = 0;
-        
-        r.innerHTML = `
-          <div>
-            ${t.id.slice(0,6)} — ${t.symbol} ${t.side}
-            ${t.comment ? `<div class="mini">${t.comment.substring(0, 30)}${t.comment.length > 30 ? '...' : ''}</div>` : ''}
-          </div>
-          <div>${t.computed_pnl == null ? 'OUVERT' : (t.computed_pnl >= 0 ? '+' : '') + t.computed_pnl.toFixed(2) + ' €'}</div>
-        `;
-        
-        r.addEventListener('click', () => openTradeDetail(t.id));
-        r.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openTradeDetail(t.id);
-          }
-        });
-        
-        allTradesList.appendChild(r);
-      });
+      AppState.currentEditing = prefill.id || null;
     }
 
     function openTradeDetail(id){ 
-      const t = trades.find(x => x.id === id); 
+      const t = AppState.trades.find(x => x.id === id); 
       if(!t) return; 
       openNewTrade(t); 
-      currentEditing = id; 
+      AppState.currentEditing = id; 
     }
 
-    // Stats & winrate
-    function renderStats(){
-      const closed = trades.filter(t => t.computed_pnl != null);
-      const wins = closed.filter(t => t.computed_pnl > 0);
-      const wr = closed.length ? Math.round((wins.length / closed.length) * 100) : 0;
-      
-      if (document.getElementById('winrate')) {
-        document.getElementById('winrate').textContent = wr + '%';
-      }
-      
-      if (capitalDisplay) {
-        if (capital == null) { 
-          capitalDisplay.textContent = '--'; 
-        } else { 
-          const pnlSum = closed.reduce((s, t) => s + (t.computed_pnl || 0), 0); 
-          const newCapital = (capital + pnlSum).toFixed(2); 
-          capitalDisplay.textContent = newCapital; 
-        }
+    // ========== AUTHENTIFICATION ==========
+    async function signUp(email, password) {
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        return { success: true, data: userCredential };
+      } catch (error) {
+        return { success: false, error: error.message };
       }
     }
-
-    // Risk/Reward calculator
-    document.getElementById('calcRR').addEventListener('click', ()=>{
-      const capInput = document.getElementById('rcapital').value;
-      const cap = capInput ? parseFloat(capInput) : (capital || 0);
-      const riskp = parseFloat(document.getElementById('rrisk').value || 0);
-      const entry = parseFloat(document.getElementById('rentry').value || 0);
-      const stop = parseFloat(document.getElementById('rstop').value || 0);
-      const target = parseFloat(document.getElementById('rtarget').value || 0);
-      const units = parseFloat(document.getElementById('runits').value || 1);
-      
-      if(!entry || entry <= 0){ 
-        document.getElementById('rrResult').textContent = 'Entry doit être positif'; 
-        return; 
+    
+    async function signIn(email, password) {
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        return { success: true, data: userCredential };
+      } catch (error) {
+        return { success: false, error: error.message };
       }
-      if(!stop || stop <= 0){ 
-        document.getElementById('rrResult').textContent = 'Stop doit être positif'; 
-        return; 
-      }
-      if(!target || target <= 0){ 
-        document.getElementById('rrResult').textContent = 'Target doit être positif'; 
-        return; 
-      }
-      if(riskp <= 0 || riskp > 100){ 
-        document.getElementById('rrResult').textContent = 'Risque doit être entre 0 et 100%'; 
-        return; 
-      }
-      
-      const riskAmount = cap * (riskp / 100);
-      const perUnitRisk = Math.abs(entry - stop);
-      const positionUnits = perUnitRisk > 0 ? Math.floor(riskAmount / perUnitRisk) : 0;
-      const reward = Math.abs(target - entry);
-      const rratio = perUnitRisk > 0 ? (reward / perUnitRisk).toFixed(2) : '—';
-      
-      document.getElementById('rrResult').innerHTML = 
-        `Risk €${riskAmount.toFixed(2)} • Taille ≈ ${positionUnits} units • R = ${rratio}`;
-    });
-
-    // Global search functionality
-    document.getElementById('globalSearch').addEventListener('input', (e) => {
-      const searchTerm = e.target.value.toLowerCase().trim();
-      if (!searchTerm) {
+    }
+    
+    async function signOut() {
+      try {
+        await auth.signOut();
+        // Réinitialiser l'état pour l'utilisateur guest
+        AppState.currentUser = null;
+        AppState.currentEditing = null;
+        AppState.loadFromLocal(); // Recharger les données guest
+        updateUIForUser();
         renderAll();
+        showAlert('Déconnexion réussie', 'success');
+      } catch (error) {
+        console.error('Erreur de déconnexion:', error);
+        showAlert('Erreur lors de la déconnexion', 'error');
+      }
+    }
+    
+    async function checkAuth() {
+      return new Promise((resolve) => {
+        auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            console.log('Utilisateur connecté:', user.email);
+            AppState.currentUser = user;
+            updateUIForUser();
+            
+            try {
+              await AppState.loadFromCloud();
+              showAlert(`Bienvenue ${user.email}`, 'success');
+            } catch (error) {
+              console.error('Erreur sync cloud:', error);
+              showAlert('Connecté mais erreur de synchronisation', 'warning');
+            }
+            
+            renderAll();
+            resolve(true);
+          } else {
+            console.log('Utilisateur déconnecté');
+            AppState.currentUser = null;
+            AppState.currentEditing = null;
+            AppState.loadFromLocal(); // Charger données guest
+            updateUIForUser();
+            renderAll();
+            resolve(false);
+          }
+        });
+      });
+    }
+
+    // ========== SYNCHRONISATION FORCÉE ==========
+    async function forceSync() {
+      if (!AppState.currentUser) {
+        showAlert('Connectez-vous pour synchroniser', 'warning');
         return;
       }
       
-      const filteredTrades = trades.filter(t => 
-        t.symbol.toLowerCase().includes(searchTerm) ||
-        (t.comment && t.comment.toLowerCase().includes(searchTerm)) ||
-        t.side.toLowerCase().includes(searchTerm)
-      );
-      
-      if (tradesList) {
-        tradesList.innerHTML = '';
-        filteredTrades.slice(0, 30).forEach(tr => {
-          const row = document.createElement('div');
-          const pnl = tr.computed_pnl;
-          row.className = 'trade-row ' + (pnl == null ? '' : (pnl >= 0 ? 'win' : 'loss'));
-          
-          row.innerHTML = `
-            <div style="display:flex;gap:12px;align-items:center">
-              <div style="width:56px;font-weight:700">${tr.symbol}</div>
-              <div style="min-width:120px">
-                <div class="mini">${tr.side.toUpperCase()}</div>
-                <div>${tr.size} @ ${tr.entry_price}</div>
-              </div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-weight:700">${pnl == null ? 'OUVERT' : (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' €'}</div>
-              <div class="mini">${tr.computed_pnl == null ? '—' : ((tr.computed_pnl / (tr.notional || 1)) * 100).toFixed(2) + '%'}</div>
-            </div>
-          `;
-          
-          row.addEventListener('click', () => openTradeDetail(tr.id));
-          tradesList.appendChild(row);
-        });
-        
-        if (filteredTrades.length === 0) {
-          tradesList.innerHTML = '<div class="empty-state"><div class="mini">Aucun trade trouvé</div></div>';
-        }
+      try {
+        showToast('Synchronisation en cours...', 'info');
+        await AppState.syncToCloud();
+        await AppState.loadFromCloud();
+        renderAll();
+        showToast('Synchronisation terminée', 'success');
+      } catch (error) {
+        console.error('Erreur sync forcée:', error);
+        showAlert('Erreur de synchronisation', 'error');
       }
-    });
-
-    // Initialize app when DOM is loaded
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
-      initApp();
     }
 
+    // ========== IMPORT/EXPORT CSV ==========
+    function initCSVImport() {
+        const csvFileInput = document.getElementById('csvFile');
+        const importCSVBtn = document.getElementById('importCSV');
+        
+        function handleCSVImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvContent = e.target.result;
+                    const trades = parseCSV(csvContent);
+                    
+                    if (trades.length > 0) {
+                        const existingIds = new Set(AppState.trades.map(t => t.id));
+                        const newTrades = trades.filter(t => !existingIds.has(t.id));
+                        
+                        if (newTrades.length > 0) {
+                            AppState.trades = [...newTrades, ...AppState.trades];
+                            AppState.persist();
+                            renderAll();
+                            showAlert(`${newTrades.length} trades importés avec succès!`, 'success');
+                        } else {
+                            showAlert('Aucun nouveau trade à importer', 'info');
+                        }
+                    } else {
+                        showAlert('Aucun trade trouvé dans le fichier', 'warning');
+                    }
+                } catch (error) {
+                    console.error('Erreur import CSV:', error);
+                    showAlert('Erreur lors de l\'import CSV: ' + error.message, 'error');
+                }
+            };
+            
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        if (csvFileInput) {
+            csvFileInput.addEventListener('change', handleCSVImport);
+        }
+        
+        if (importCSVBtn) {
+            importCSVBtn.addEventListener('click', () => {
+                csvFileInput.click();
+            });
+        }
+        
+        const btnImport = document.getElementById('btnImport');
+        if (btnImport) {
+            btnImport.addEventListener('click', () => {
+                csvFileInput.click();
+            });
+        }
+    }
+
+    function parseCSV(csvContent) {
+        const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
+        
+        const headers = lines[0].split(',').map(h => h.trim());
+        const trades = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            try {
+                const values = parseCSVLine(lines[i]);
+                const trade = {};
+                
+                for (let j = 0; j < headers.length; j++) {
+                    const header = headers[j];
+                    let value = values[j] || '';
+                    
+                    if (typeof value === 'string') {
+                        value = value.replace(/^"|"$/g, '').trim();
+                    }
+                    
+                    switch (header) {
+                        case 'id':
+                            trade.id = value || cryptoRandomId();
+                            break;
+                        case 'symbol':
+                            trade.symbol = value;
+                            break;
+                        case 'side':
+                            trade.side = value.toLowerCase();
+                            break;
+                        case 'entry_price':
+                            trade.entry_price = parseFloat(value) || 0;
+                            break;
+                        case 'exit_price':
+                            trade.exit_price = value ? parseFloat(value) : null;
+                            break;
+                        case 'size':
+                            trade.size = parseFloat(value) || 0;
+                            break;
+                        case 'fees':
+                            trade.fees = parseFloat(value) || 0;
+                            break;
+                        case 'taxes':
+                            trade.taxes = parseFloat(value) || 0;
+                            break;
+                        case 'entry_timestamp':
+                            trade.entry_timestamp = value || new Date().toISOString();
+                            break;
+                        case 'exit_timestamp':
+                            trade.exit_timestamp = value || null;
+                            break;
+                        case 'confidence':
+                            trade.confidence = parseInt(value) || 50;
+                            break;
+                        case 'score':
+                            trade.score = parseInt(value) || 50;
+                            break;
+                        case 'comment':
+                            trade.comment = value || '';
+                            break;
+                        case 'is_backfilled':
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                
+                trade.notional = trade.entry_price * trade.size;
+                trade.computed_pnl = computePnL(trade);
+                trade.duration_seconds = calculateDuration(trade.entry_timestamp, trade.exit_timestamp);
+                trade.updated_at = new Date().toISOString();
+                
+                if (!trade.market) trade.market = 'spot';
+                if (!trade.timezone) trade.timezone = 'Europe/Paris';
+                
+                try {
+                    validateTrade(trade);
+                    trades.push(trade);
+                } catch (validationError) {
+                    console.warn('Trade ignoré (validation failed):', trade, validationError);
+                }
+                
+            } catch (error) {
+                console.warn('Ligne CSV ignorée (ligne ' + (i + 1) + '):', error);
+            }
+        }
+        
+        return trades;
+    }
+
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current);
+        return result;
+    }
+
+    function exportCSV() {
+        const headers = [
+            'id', 'symbol', 'side', 'entry_price', 'exit_price', 'size', 
+            'fees', 'taxes', 'entry_timestamp', 'exit_timestamp', 
+            'confidence', 'score', 'comment', 'market', 'computed_pnl'
+        ];
+        
+        const csvContent = [
+            headers.join(','),
+            ...AppState.trades.map(trade => 
+                headers.map(header => {
+                    let value = trade[header];
+                    if (value === null || value === undefined) value = '';
+                    
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                        value = '"' + value.replace(/"/g, '""') + '"';
+                    }
+                    
+                    return value;
+                }).join(',')
+            )
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `trades_export_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('CSV exporté avec succès', 'success');
+    }
+
+    // ========== ÉVÉNEMENTS ==========
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialiser l'état AVANT tout
+      AppState.init();
+      
+      // Initialisations
+      initTheme();
+      initMobileMenu();
+      initQuickAdd();
+      initChart();
+      initCSVImport();
+      initAnalyticsCharts();
+      
+      // Vérifier l'authentification
+      checkAuth().then(() => {
+        renderAll();
+        console.log('Application initialisée avec', AppState.trades.length, 'trades');
+      });
+      
+      // Navigation
+      document.addEventListener('click', (e)=>{
+        if (e.target.matches('.nav-item')) {
+          document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+          e.target.classList.add('active');
+          const view = e.target.getAttribute('data-view');
+          showView(view);
+        }
+        
+        if (e.target.matches('.auth-tab')) {
+          document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+          e.target.classList.add('active');
+          const tabType = e.target.getAttribute('data-tab');
+          
+          if (tabType === 'login') {
+            document.getElementById('authTitle').textContent = 'Connexion';
+            document.getElementById('authSubmit').textContent = 'Se connecter';
+            document.getElementById('authConfirmPassword').style.display = 'none';
+          } else {
+            document.getElementById('authTitle').textContent = 'Inscription';
+            document.getElementById('authSubmit').textContent = 'S\'inscrire';
+            document.getElementById('authConfirmPassword').style.display = 'block';
+          }
+        }
+      });
+
+      // Thème
+      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+      
+      // Authentification
+      document.getElementById('btnLogin').addEventListener('click', () => {
+        document.getElementById('authModal').style.display = 'flex';
+      });
+      
+      document.getElementById('btnSignup').addEventListener('click', () => {
+        document.getElementById('authModal').style.display = 'flex';
+        document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelector('[data-tab="signup"]').classList.add('active');
+        document.getElementById('authTitle').textContent = 'Inscription';
+        document.getElementById('authSubmit').textContent = 'S\'inscrire';
+        document.getElementById('authConfirmPassword').style.display = 'block';
+      });
+      
+      document.getElementById('btnLogout').addEventListener('click', signOut);
+      
+      // Formulaire d'authentification
+      document.getElementById('authForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const isLogin = document.getElementById('authTitle').textContent === 'Connexion';
+        
+        let result;
+        if (isLogin) {
+          result = await signIn(email, password);
+        } else {
+          const confirmPassword = document.getElementById('confirmPassword').value;
+          if (password !== confirmPassword) {
+            document.getElementById('authMessage').textContent = 'Les mots de passe ne correspondent pas';
+            document.getElementById('authMessage').style.color = 'var(--accent-red)';
+            return;
+          }
+          result = await signUp(email, password);
+        }
+        
+        if (result.success) {
+          document.getElementById('authMessage').textContent = isLogin ? 'Connexion réussie!' : 'Inscription réussie!';
+          document.getElementById('authMessage').style.color = 'var(--accent-green)';
+          setTimeout(() => {
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('authForm').reset();
+          }, 1500);
+        } else {
+          document.getElementById('authMessage').textContent = result.error;
+          document.getElementById('authMessage').style.color = 'var(--accent-red)';
+        }
+      });
+      
+      // Fermer les modals
+      document.getElementById('closeAuthModal').addEventListener('click', () => {
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('authForm').reset();
+      });
+      
+      // Nouveau trade
+      document.getElementById('btnNewTrade').addEventListener('click', () => openNewTrade());
+      document.getElementById('openNew').addEventListener('click', () => openNewTrade());
+      document.getElementById('fabButton').addEventListener('click', () => openNewTrade());
+      
+      // Fermer modal
+      document.getElementById('closeModal').addEventListener('click', () => { 
+        document.getElementById('modalBackdrop').style.display = 'none'; 
+        AppState.currentEditing = null; 
+      });
+
+      // Plein écran
+      document.querySelector('.chart-fullscreen-btn').addEventListener('click', () => {
+        document.getElementById('chartModal').style.display = 'flex';
+        setTimeout(() => {
+          initFullscreenCharts();
+        }, 100);
+      });
+      
+      document.getElementById('closeChartModal').addEventListener('click', () => {
+        document.getElementById('chartModal').style.display = 'none';
+        Object.values(fullscreenCharts).forEach(chart => {
+          if (chart) chart.destroy();
+        });
+        fullscreenCharts = {};
+      });
+
+      // Cases à cocher plein écran
+      document.querySelectorAll('.chart-checkbox input').forEach(checkbox => {
+        checkbox.addEventListener('change', updateFullscreenCharts);
+      });
+
+      // Sauvegarder capital
+      document.getElementById('saveCapital').addEventListener('click', () => {
+        const v = document.getElementById('topCapital').value;
+        const num = parseFloat(v);
+        if(isNaN(num) || num < 0) {
+          showAlert('Capital non valide. Doit être un nombre positif.', 'error');
+          return;
+        }
+        AppState.capital = num; 
+        AppState.persistToLocal();
+        renderStats();
+        showAlert('Capital sauvegardé: €'+num.toFixed(2), 'success');
+      });
+
+      // Synchronisation
+      document.getElementById('btnSyncNow').addEventListener('click', forceSync);
+
+      // Formulaire de trade
+      document.getElementById('tradeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        try {
+          const fd = new FormData(document.getElementById('tradeForm'));
+          const t = Object.fromEntries(fd.entries());
+          
+          t.size = parseFloat(t.size || 0);
+          t.entry_price = parseFloat(t.entry_price || 0);
+          t.exit_price = t.exit_price ? parseFloat(t.exit_price) : null;
+          t.fees = parseFloat(t.fees || 0);
+          t.taxes = parseFloat(t.taxes || 0);
+          t.confidence = parseInt(t.confidence || 0);
+          t.score = parseInt(t.score || 0);
+          
+          t.entry_timestamp = t.entry_timestamp ? new Date(t.entry_timestamp).toISOString() : new Date().toISOString();
+          t.exit_timestamp = t.exit_timestamp ? new Date(t.exit_timestamp).toISOString() : null;
+          
+          validateTrade(t);
+          
+          t.notional = (t.entry_price || 0) * (t.size || 0);
+          t.computed_pnl = computePnL(t);
+          t.duration_seconds = calculateDuration(t.entry_timestamp, t.exit_timestamp);
+          t.updated_at = new Date().toISOString();
+          
+          if(AppState.currentEditing){
+            const idx = AppState.trades.findIndex(x => x.id === AppState.currentEditing);
+            if(idx >= 0){ 
+              t.id = AppState.currentEditing; 
+              AppState.trades[idx] = t; 
+            }
+          } else { 
+            t.id = cryptoRandomId(); 
+            AppState.trades.unshift(t); 
+          }
+          
+          if (await AppState.persist()) {
+            renderAll(); 
+            document.getElementById('modalBackdrop').style.display = 'none'; 
+            AppState.currentEditing = null; 
+            document.getElementById('tradeForm').reset();
+            showAlert(AppState.currentEditing ? 'Trade modifié avec succès!' : 'Trade créé avec succès!', 'success');
+          }
+        } catch (error) {
+          showAlert('Erreur: ' + error.message, 'error');
+        }
+      });
+
+      // Recherche avec debounce
+      const searchInput = document.getElementById('globalSearch');
+      if (searchInput) {
+        searchInput.addEventListener('input', debounce((e) => {
+          console.log('Recherche:', e.target.value);
+        }, 300));
+      }
+
+      // Boutons supplémentaires
+      document.getElementById('btnNowEntry').addEventListener('click', () => {
+        document.getElementById('entry_timestamp').value = new Date().toISOString().slice(0, 16);
+      });
+      
+      document.getElementById('btnNowExit').addEventListener('click', () => {
+        document.getElementById('exit_timestamp').value = new Date().toISOString().slice(0, 16);
+      });
+      
+      document.getElementById('markBackfill').addEventListener('click', () => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        document.getElementById('entry_timestamp').value = yesterday.toISOString().slice(0, 16);
+      });
+      
+      document.getElementById('deleteTrade').addEventListener('click', () => {
+        if (AppState.currentEditing) {
+          AppState.trades = AppState.trades.filter(t => t.id !== AppState.currentEditing);
+          AppState.persist();
+          renderAll();
+          document.getElementById('modalBackdrop').style.display = 'none';
+          showAlert('Trade supprimé', 'success');
+        }
+      });
+
+      // Export CSV
+      document.getElementById('exportCSV').addEventListener('click', exportCSV);
+      document.getElementById('exportCSV2').addEventListener('click', exportCSV);
+
+      // Debug
+      window.debugAppState = function() {
+        console.log('=== DEBUG APP STATE ===');
+        console.log('Utilisateur:', AppState.currentUser?.email);
+        console.log('Nombre de trades:', AppState.trades.length);
+        console.log('Capital:', AppState.capital);
+        console.log('=======================');
+      };
+    });
   </script>
 </body>
 </html>
